@@ -21,7 +21,14 @@ import {
   type LoadIssue,
   type SaveResult,
 } from "@/lib/storage";
-import { addTask, createTask, deleteTask, toggleTask } from "@/lib/tasks";
+import {
+  addTask,
+  createTask,
+  deleteTask,
+  toggleTask,
+  updateTask,
+  type TaskInput,
+} from "@/lib/tasks";
 import type { Task } from "@/types/task";
 
 export type SaveError = Extract<SaveResult, { ok: false }>["reason"];
@@ -84,8 +91,9 @@ export function useTasks() {
     tasks,
     loadIssue,
     saveError,
-    add: (title: string) => commit(addTask(tasks, createTask(title))),
+    add: (input: TaskInput) => commit(addTask(tasks, createTask(input))),
     toggle: (id: string) => commit(toggleTask(tasks, id)),
+    update: (id: string, changes: TaskInput) => commit(updateTask(tasks, id, changes)),
     remove: (id: string) => commit(deleteTask(tasks, id)),
     dismissLoadIssue: () => setLoadIssue(null),
   };
