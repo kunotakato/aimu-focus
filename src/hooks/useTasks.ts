@@ -95,6 +95,8 @@ export function useTasks() {
     toggle: (id: string) => commit(toggleTask(tasks, id)),
     update: (id: string, changes: TaskInput) => commit(updateTask(tasks, id, changes)),
     remove: (id: string) => commit(deleteTask(tasks, id)),
+    /** 一覧をまるごと置き換える（バックアップからの復元・復元の取り消しに使う） */
+    replaceAll: (next: Task[]) => commit(next),
     dismissLoadIssue: () => setLoadIssue(null),
   };
 }

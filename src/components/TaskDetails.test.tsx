@@ -104,7 +104,8 @@ describe("タスクの詳細管理", () => {
     expect(screen.getByText(/期限切れ（2日超過）/)).toBeInTheDocument();
 
     await user.click(screen.getByRole("checkbox", { name: "遅れているタスク" }));
-    expect(screen.queryByText(/期限切れ/)).not.toBeInTheDocument();
+    // 「期限切れ（」で探すのは、ダッシュボードの「期限切れ」タイルと区別するため
+    expect(screen.queryByText(/期限切れ（/)).not.toBeInTheDocument();
   });
 
   it("期限が近いタスクには残り日数を表示する", () => {
