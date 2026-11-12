@@ -14,7 +14,7 @@ export default function Home() {
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
           Aimu Focus
         </h1>
-        <p className="mt-1 text-base text-slate-600 sm:text-base">
+        <p className="mt-1 text-base text-slate-600">
           タスクを管理するだけでなく、重要な行動を確実に進める。
         </p>
       </header>
