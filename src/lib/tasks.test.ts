@@ -5,6 +5,7 @@ import {
   createTask,
   deleteTask,
   toggleTask,
+  updateTask,
   validateTitle,
 } from "@/lib/tasks";
 
@@ -45,6 +46,11 @@ describe("createTask（タスクの作成）", () => {
     });
   });
 
+  it("優先度・期限・説明を指定して作れる", () => {
+    const task = createTask({ title: "A", description: "メモ", priority: "high", dueDate: "2026-12-01" });
+    expect(task).toMatchObject({ title: "A", description: "メモ", priority: "high", dueDate: "2026-12-01" });
+  });
+
   it("ID を指定しなければ、毎回違う ID が付く", () => {
     expect(createTask("A").id).not.toBe(createTask("B").id);
   });
@@ -68,6 +74,19 @@ describe("addTask / toggleTask / deleteTask", () => {
     expect(toggleTask(result, "a", LATER)[0].completed).toBe(false);
   });
 
+  it("updateTask は対象の内容を書き換え、更新日時を変える（作成日時は変えない）", () => {
+    const changes = { title: "A改", description: "説明", priority: "high" as const, dueDate: "2026-12-01" };
+    const result = updateTask([a, b], "a", changes, LATER);
+    expect(result[0]).toEqual({ ...a, ...changes, updatedAt: LATER.toISOString() });
+    expect(result[0].createdAt).toBe(a.createdAt);
+    expect(result[1]).toBe(b);
+  });
+
+  it("updateTask で内容が何も変わらなければ、更新日時も変えない", () => {
+    const same = { title: a.title, description: a.description, priority: a.priority, dueDate: a.dueDate };
+    expect(updateTask([a], "a", same, LATER)[0]).toBe(a);
+  });
+
   it("deleteTask は対象のタスクだけを取り除く", () => {
     expect(deleteTask([a, b], "a")).toEqual([b]);
   });
@@ -76,6 +95,7 @@ describe("addTask / toggleTask / deleteTask", () => {
     const original = [a, b];
     addTask(original, createTask("C"));
     toggleTask(original, "a");
+    updateTask(original, "a", { title: "X", description: "", priority: "low", dueDate: null });
     deleteTask(original, "a");
     expect(original).toEqual([a, b]);
     expect(a.completed).toBe(false);

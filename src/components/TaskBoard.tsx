@@ -3,10 +3,14 @@
 /**
  * タスクの入力・一覧・保存状態のメッセージをまとめた画面（ブラウザでだけ表示される）。
  */
+import { useState } from "react";
 import { Notice } from "@/components/Notice";
 import { TaskForm } from "@/components/TaskForm";
 import { TaskList } from "@/components/TaskList";
+import { TaskToolbar } from "@/components/TaskToolbar";
 import { useTasks, type SaveError } from "@/hooks/useTasks";
+import { useToday } from "@/hooks/useToday";
+import { DEFAULT_QUERY, filterTasks, isFiltering, type TaskQuery } from "@/lib/filter";
 import type { LoadIssue } from "@/lib/storage";
 
 const BACKUP_NOTE = "読み込めなかった元のデータは、次に変更を保存するとき、ブラウザ内に別名で退避します。";
@@ -29,7 +33,13 @@ const SAVE_ERROR_MESSAGES: Record<SaveError, string> = {
 };
 
 export function TaskBoard() {
-  const { tasks, loadIssue, saveError, add, toggle, remove, dismissLoadIssue } = useTasks();
+  const { tasks, loadIssue, saveError, add, toggle, update, remove, dismissLoadIssue } = useTasks();
+  const today = useToday();
+  const [query, setQuery] = useState<TaskQuery>(DEFAULT_QUERY);
+
+  // 表示するタスクは state にせず、毎回 tasks と query から計算する。
+  // 同じ情報を2か所で持たないことで、「一覧と表示がずれる」バグを防ぐ。
+  const visibleTasks = filterTasks(tasks, query);
   const remaining = tasks.filter((task) => !task.completed).length;
 
   // localStorage が使えないことは loadIssue で伝えているので、同じ内容の保存エラーは重ねて出さない
@@ -51,7 +61,7 @@ export function TaskBoard() {
         </Notice>
       )}
 
-      <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-6">
+      <section aria-label="タスクの追加" className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-6">
         <TaskForm onAdd={add} />
       </section>
 
@@ -66,7 +76,29 @@ export function TaskBoard() {
             </p>
           )}
         </div>
-        <TaskList tasks={tasks} onToggle={toggle} onDelete={remove} />
+
+        {tasks.length > 0 && (
+          <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+            <TaskToolbar query={query} onChange={setQuery} />
+          </div>
+        )}
+
+        {/* aria-live: 件数が変わったことを読み上げソフトに伝える */}
+        {tasks.length > 0 && isFiltering(query) && (
+          <p aria-live="polite" className="text-sm text-slate-700">
+            条件に合うタスク：{visibleTasks.length} 件
+          </p>
+        )}
+
+        <TaskList
+          tasks={visibleTasks}
+          totalCount={tasks.length}
+          today={today}
+          onToggle={toggle}
+          onUpdate={update}
+          onDelete={remove}
+          onResetQuery={() => setQuery({ ...DEFAULT_QUERY, sort: query.sort })}
+        />
       </section>
 
       {/* JSX では改行が空白になるため、日本語の文は1つの文字列にまとめる */}

@@ -5,7 +5,7 @@
  * 実行中に読み込んだデータは何が入っているか分からない（unknown）ので、
  * ここで1項目ずつ確かめてから Task として扱う。
  */
-import { TITLE_MAX_LENGTH } from "@/lib/tasks";
+import { DESCRIPTION_MAX_LENGTH, TITLE_MAX_LENGTH } from "@/lib/tasks";
 import type { Priority, Task } from "@/types/task";
 
 const PRIORITIES: readonly Priority[] = ["high", "medium", "low"];
@@ -39,6 +39,7 @@ export function isTask(value: unknown): value is Task {
     title.trim() !== "" &&
     title.length <= TITLE_MAX_LENGTH &&
     typeof description === "string" &&
+    description.length <= DESCRIPTION_MAX_LENGTH &&
     typeof completed === "boolean" &&
     PRIORITIES.includes(priority as Priority) &&
     (dueDate === null || (typeof dueDate === "string" && isValidDateString(dueDate))) &&
