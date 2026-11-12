@@ -5,7 +5,7 @@
 仕事・副業・資格取得・プログラミング学習など、複数のタスクを抱える 20〜30 代の会社員のためのタスク管理 Web アプリです。
 Next.js（App Router）と TypeScript で作成し、データはブラウザの localStorage に保存します。
 
-**公開URL：** （Vercel へのデプロイ後に記載します）
+**公開URL：** https://aimu-focus.vercel.app
 
 <p>
   <img src="docs/images/mobile.png" alt="スマートフォンでの表示。上部に完了率33%と、全6件・完了2件・未完了4件・期限切れ1件の進捗ダッシュボード、その下にタスクの入力欄" width="260">
