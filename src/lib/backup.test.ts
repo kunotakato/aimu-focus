@@ -1,0 +1,53 @@
+import { describe, expect, it } from "vitest";
+import { backupFileName, createBackup, parseBackup, serializeBackup } from "@/lib/backup";
+import { createTask } from "@/lib/tasks";
+
+const NOW = new Date("2026-11-12T00:30:00.000Z");
+const a = createTask({ title: "A", priority: "high", dueDate: "2026-12-01" }, { id: "a", now: NOW });
+const b = { ...createTask("B", { id: "b", now: NOW }), completed: true };
+
+/** 正しいバックアップの中身を、一部だけ書き換えた JSON 文字列を作る */
+function backupJson(overrides: Record<string, unknown> = {}): string {
+  return JSON.stringify({ ...createBackup([a, b], NOW), ...overrides });
+}
+
+describe("バックアップの作成", () => {
+  it("アプリ名・形式番号・書き出し日時・タスクを含む", () => {
+    expect(createBackup([a], NOW)).toEqual({
+      app: "aimu-focus",
+      version: 1,
+      exportedAt: "2026-11-12T00:30:00.000Z",
+      tasks: [a],
+    });
+  });
+
+  it("書き出した内容は、そのまま復元できる（往復しても変わらない）", () => {
+    const result = parseBackup(serializeBackup(createBackup([a, b], NOW)));
+    expect(result).toEqual({ ok: true, backup: createBackup([a, b], NOW) });
+  });
+
+  it("ファイル名に日時が入る", () => {
+    expect(backupFileName(new Date(2026, 10, 12, 9, 5))).toBe("aimu-focus-backup-20261112-0905.json");
+  });
+
+  it("0件でも書き出し・復元できる", () => {
+    expect(parseBackup(serializeBackup(createBackup([], NOW)))).toMatchObject({ ok: true, backup: { tasks: [] } });
+  });
+});
+
+describe("復元前のデータ検証（不正なデータは読み込まない）", () => {
+  it.each([
+    ["JSON でない", "これはJSONではない", "JSON ファイルとして読み込めません"],
+    ["別アプリのファイル", JSON.stringify({ app: "other", version: 1, tasks: [] }), "バックアップファイルではありません"],
+    ["配列だけ", JSON.stringify([a]), "バックアップファイルではありません"],
+    ["形式番号が違う", backupJson({ version: 2 }), "形式番号"],
+    ["書き出し日時が不正", backupJson({ exportedAt: "昨日" }), "作成日時"],
+    ["tasks が配列でない", backupJson({ tasks: {} }), "タスクの一覧"],
+    ["不正なタスクを含む", backupJson({ tasks: [a, { ...b, priority: "urgent" }, { id: "x" }] }), "正しくないタスクが2件"],
+    ["ID が重複", backupJson({ tasks: [a, { ...b, id: "a" }] }), "重複"],
+  ])("%s → 読み込まない", (_label, text, expectedError) => {
+    const result = parseBackup(text);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toContain(expectedError);
+  });
+});

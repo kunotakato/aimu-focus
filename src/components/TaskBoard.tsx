@@ -4,6 +4,8 @@
  * タスクの入力・一覧・保存状態のメッセージをまとめた画面（ブラウザでだけ表示される）。
  */
 import { useState } from "react";
+import { BackupPanel } from "@/components/BackupPanel";
+import { Dashboard } from "@/components/Dashboard";
 import { Notice } from "@/components/Notice";
 import { TaskForm } from "@/components/TaskForm";
 import { TaskList } from "@/components/TaskList";
@@ -11,6 +13,7 @@ import { TaskToolbar } from "@/components/TaskToolbar";
 import { useTasks, type SaveError } from "@/hooks/useTasks";
 import { useToday } from "@/hooks/useToday";
 import { DEFAULT_QUERY, filterTasks, isFiltering, type TaskQuery } from "@/lib/filter";
+import { computeStats } from "@/lib/stats";
 import type { LoadIssue } from "@/lib/storage";
 
 const BACKUP_NOTE = "読み込めなかった元のデータは、次に変更を保存するとき、ブラウザ内に別名で退避します。";
@@ -33,14 +36,14 @@ const SAVE_ERROR_MESSAGES: Record<SaveError, string> = {
 };
 
 export function TaskBoard() {
-  const { tasks, loadIssue, saveError, add, toggle, update, remove, dismissLoadIssue } = useTasks();
+  const { tasks, loadIssue, saveError, add, toggle, update, remove, replaceAll, dismissLoadIssue } = useTasks();
   const today = useToday();
   const [query, setQuery] = useState<TaskQuery>(DEFAULT_QUERY);
 
   // 表示するタスクは state にせず、毎回 tasks と query から計算する。
   // 同じ情報を2か所で持たないことで、「一覧と表示がずれる」バグを防ぐ。
   const visibleTasks = filterTasks(tasks, query);
-  const remaining = tasks.filter((task) => !task.completed).length;
+  const stats = computeStats(tasks, today);
 
   // localStorage が使えないことは loadIssue で伝えているので、同じ内容の保存エラーは重ねて出さない
   const showSaveError = saveError && !(saveError === "unavailable" && loadIssue?.type === "unavailable");
@@ -61,6 +64,8 @@ export function TaskBoard() {
         </Notice>
       )}
 
+      <Dashboard stats={stats} />
+
       <section aria-label="タスクの追加" className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-6">
         <TaskForm onAdd={add} />
       </section>
@@ -72,7 +77,7 @@ export function TaskBoard() {
           </h2>
           {tasks.length > 0 && (
             <p className="text-sm text-slate-600">
-              未完了 {remaining} 件 / 全 {tasks.length} 件
+              未完了 {stats.active} 件 / 全 {stats.total} 件
             </p>
           )}
         </div>
@@ -100,6 +105,8 @@ export function TaskBoard() {
           onResetQuery={() => setQuery({ ...DEFAULT_QUERY, sort: query.sort })}
         />
       </section>
+
+      <BackupPanel tasks={tasks} onRestore={replaceAll} />
 
       {/* JSX では改行が空白になるため、日本語の文は1つの文字列にまとめる */}
       <Notice variant="info">
