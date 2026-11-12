@@ -9,6 +9,7 @@
  *   onAdd … 入力チェックを通ったタスクの内容を親に渡すための関数
  */
 import { useId, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { ErrorIcon } from "@/components/icons";
 import { FieldError, TaskFields } from "@/components/TaskFields";
 import { EMPTY_FORM_VALUES, validateTaskForm, type TaskFormErrors, type TaskFormValues } from "@/lib/taskForm";
 import { TITLE_MAX_LENGTH, type TaskInput } from "@/lib/tasks";
@@ -69,7 +70,7 @@ export function TaskForm({ onAdd }: Props) {
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
       <div className="flex flex-col gap-2">
-        <label htmlFor={`${id}-title`} className="text-sm font-semibold text-slate-700">
+        <label htmlFor={`${id}-title`} className="text-base font-semibold text-slate-700">
           新しいタスク
         </label>
         <div className="flex gap-2">
@@ -96,8 +97,9 @@ export function TaskForm({ onAdd }: Props) {
           </button>
         </div>
         {errors.title && (
-          <p id={`${id}-title-error`} role="alert" className="text-sm font-medium text-red-700">
-            {errors.title}
+          <p id={`${id}-title-error`} role="alert" className="flex items-start gap-1.5 text-base font-medium text-red-700">
+            <ErrorIcon className="mt-1 size-4" />
+            <span>{errors.title}</span>
           </p>
         )}
       </div>
@@ -107,7 +109,7 @@ export function TaskForm({ onAdd }: Props) {
         onClick={() => setShowDetails((open) => !open)}
         aria-expanded={showDetails}
         aria-controls={showDetails ? `${id}-details` : undefined}
-        className="-mx-2 flex min-h-11 items-center gap-2 self-start rounded-lg px-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 focus-visible:outline-2 focus-visible:outline-indigo-600"
+        className="-mx-2 flex min-h-11 items-center gap-2 self-start rounded-lg px-2 text-base font-semibold text-indigo-700 hover:bg-indigo-50 focus-visible:outline-2 focus-visible:outline-indigo-600"
       >
         <span aria-hidden="true" className={`inline-block transition-transform ${showDetails ? "rotate-90" : ""}`}>
           ▶

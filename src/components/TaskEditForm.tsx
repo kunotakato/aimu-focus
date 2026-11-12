@@ -74,13 +74,13 @@ export function TaskEditForm({ task, onSave, onCancel }: Props) {
         <button
           type="button"
           onClick={onCancel}
-          className="min-h-11 flex-1 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:flex-none"
+          className="min-h-11 flex-1 rounded-lg border border-slate-300 bg-white px-4 text-base font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:flex-none"
         >
           キャンセル
         </button>
         <button
           type="submit"
-          className="min-h-11 flex-1 rounded-lg bg-indigo-600 px-5 text-sm font-semibold text-white hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:flex-none"
+          className="min-h-11 flex-1 rounded-lg bg-indigo-600 px-5 text-base font-semibold text-white hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:flex-none"
         >
           保存する
         </button>

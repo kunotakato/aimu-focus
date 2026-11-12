@@ -19,7 +19,7 @@ const PRIORITY_BARS: Record<Priority, number> = { high: 3, medium: 2, low: 1 };
 export function PriorityBadge({ priority }: { priority: Priority }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-sm font-semibold ring-1 ring-inset ${PRIORITY_STYLES[priority]}`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-base font-semibold ring-1 ring-inset ${PRIORITY_STYLES[priority]}`}
     >
       <span aria-hidden="true" className="flex items-end gap-px">
         {[1, 2, 3].map((n) => (
@@ -43,7 +43,7 @@ export function DueDateLabel({ task, today }: { task: Task; today: string }) {
 
   if (status.kind === "overdue") {
     return (
-      <span className="inline-flex items-center gap-1 text-sm font-bold text-red-700">
+      <span className="inline-flex items-center gap-1 text-base font-bold text-red-700">
         <WarningIcon className="size-4" />
         期限切れ（{status.days}日超過）・{date}
       </span>
@@ -55,7 +55,7 @@ export function DueDateLabel({ task, today }: { task: Task; today: string }) {
   const emphasis = !task.completed && (status.kind === "today" || status.kind === "soon");
 
   return (
-    <span className={`text-sm ${emphasis ? "font-semibold text-amber-900" : "text-slate-600"}`}>
+    <span className={`text-base ${emphasis ? "font-semibold text-amber-900" : "text-slate-600"}`}>
       期限 {date}
       {suffix}
     </span>

@@ -4,6 +4,8 @@
  * タスクの一覧。
  * 「タスクが0件」と「条件に合うタスクが0件」は意味が違うので、案内を分けて表示する。
  */
+import { useRef } from "react";
+import { flushSync } from "react-dom";
 import { TaskItem } from "@/components/TaskItem";
 import type { TaskInput } from "@/lib/tasks";
 import type { Task } from "@/types/task";
@@ -24,12 +26,28 @@ function EmptyState({ title, children }: { title: string; children: React.ReactN
   return (
     <div className="rounded-xl border border-dashed border-slate-300 bg-white/60 px-4 py-10 text-center">
       <p className="text-base font-semibold text-slate-700">{title}</p>
-      <div className="mt-1 text-sm text-slate-600">{children}</div>
+      <div className="mt-1 text-base text-slate-600">{children}</div>
     </div>
   );
 }
 
 export function TaskList({ tasks, totalCount, today, onToggle, onUpdate, onDelete, onResetQuery }: Props) {
+  const listRef = useRef<HTMLUListElement>(null);
+
+  /**
+   * 削除したら、フォーカスを「次のタスク（最後なら前のタスク）」のチェックボックスへ移す。
+   * 1件も残らなければ「タスク」見出しへ移す。削除したボタンは消えてしまうため、移さないと迷子になる。
+   */
+  function handleDelete(id: string) {
+    const index = tasks.findIndex((task) => task.id === id);
+    const neighbor = tasks[index + 1] ?? tasks[index - 1];
+    flushSync(() => onDelete(id));
+    const target = neighbor
+      ? listRef.current?.querySelector<HTMLElement>(`[data-task-id="${CSS.escape(neighbor.id)}"] input[type="checkbox"]`)
+      : document.getElementById("task-list-heading");
+    target?.focus();
+  }
+
   if (totalCount === 0) {
     return (
       <EmptyState title="タスクはまだありません">
@@ -45,7 +63,7 @@ export function TaskList({ tasks, totalCount, today, onToggle, onUpdate, onDelet
         <button
           type="button"
           onClick={onResetQuery}
-          className="mt-3 min-h-11 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+          className="mt-3 min-h-11 rounded-lg border border-slate-300 bg-white px-4 text-base font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
         >
           条件をリセット
         </button>
@@ -54,7 +72,7 @@ export function TaskList({ tasks, totalCount, today, onToggle, onUpdate, onDelet
   }
 
   return (
-    <ul className="flex flex-col gap-2" aria-label="タスク一覧">
+    <ul ref={listRef} className="flex flex-col gap-2" aria-label="タスク一覧">
       {/* key: React が「どの行がどのタスクか」を見分ける目印。並び替えても正しく対応させるため一意な id を使う */}
       {tasks.map((task) => (
         <TaskItem
@@ -63,7 +81,7 @@ export function TaskList({ tasks, totalCount, today, onToggle, onUpdate, onDelet
           today={today}
           onToggle={onToggle}
           onUpdate={onUpdate}
-          onDelete={onDelete}
+          onDelete={handleDelete}
         />
       ))}
     </ul>

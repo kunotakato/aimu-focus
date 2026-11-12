@@ -49,7 +49,7 @@ export function parseBackup(text: string): ParseBackupResult {
   try {
     data = JSON.parse(text);
   } catch {
-    return { ok: false, error: "JSON ファイルとして読み込めませんでした。ファイルが壊れていないか確認してください。" };
+    return { ok: false, error: "ファイルの中身を読み取れませんでした。ファイルが壊れていないか確認してください。" };
   }
 
   if (typeof data !== "object" || data === null || (data as { app?: unknown }).app !== BACKUP_APP_ID) {
@@ -59,7 +59,7 @@ export function parseBackup(text: string): ParseBackupResult {
   const { version, exportedAt, tasks } = data as Record<string, unknown>;
 
   if (version !== BACKUP_VERSION) {
-    return { ok: false, error: "このアプリでは読み込めない形式のバックアップです（形式番号が違います）。" };
+    return { ok: false, error: "このアプリでは読み込めないバージョンのバックアップです。" };
   }
   if (typeof exportedAt !== "string" || Number.isNaN(Date.parse(exportedAt))) {
     return { ok: false, error: "バックアップの作成日時が正しくありません。" };
@@ -78,7 +78,7 @@ export function parseBackup(text: string): ParseBackupResult {
 
   const ids = new Set((tasks as Task[]).map((task) => task.id));
   if (ids.size !== tasks.length) {
-    return { ok: false, error: "同じ ID のタスクが重複しているため、読み込みを中止しました（データは変更していません）。" };
+    return { ok: false, error: "同じタスクが重複して含まれているため、読み込みを中止しました（データは変更していません）。" };
   }
 
   return {

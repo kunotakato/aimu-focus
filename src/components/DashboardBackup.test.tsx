@@ -85,7 +85,7 @@ describe("バックアップ（書き出し）", () => {
     seed(current);
     const { user } = setup();
     await openBackupPanel(user);
-    await user.click(screen.getByRole("button", { name: "バックアップを保存（JSON）" }));
+    await user.click(screen.getByRole("button", { name: "バックアップファイルを保存" }));
 
     expect(downloadTextFile).toHaveBeenCalledTimes(1);
     const [fileName, text] = vi.mocked(downloadTextFile).mock.calls[0];

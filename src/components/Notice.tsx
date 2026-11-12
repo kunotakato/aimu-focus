@@ -26,7 +26,7 @@ export function Notice({ variant, children, onDismiss }: Props) {
     // role="alert": 表示された瞬間に読み上げソフトが内容を読み上げる
     <div role={variant === "info" ? "status" : "alert"} className={`flex gap-3 rounded-xl border p-4 ${box}`}>
       <Icon className="mt-0.5" />
-      <div className="min-w-0 flex-1 text-sm leading-relaxed">
+      <div className="min-w-0 flex-1 text-base leading-relaxed">
         <p className="font-bold">{label}</p>
         <div>{children}</div>
       </div>
@@ -34,7 +34,7 @@ export function Notice({ variant, children, onDismiss }: Props) {
         <button
           type="button"
           onClick={onDismiss}
-          className="-m-1 min-h-11 shrink-0 self-start rounded-lg px-3 text-sm font-semibold underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-current"
+          className="-m-1 min-h-11 shrink-0 self-start rounded-lg px-3 text-base font-semibold underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-current"
         >
           閉じる
         </button>
