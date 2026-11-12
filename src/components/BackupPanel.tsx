@@ -32,7 +32,7 @@ type Props = {
 type Message = { variant: "info" | "error"; text: string };
 
 const secondaryButton =
-  "min-h-11 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600";
+  "min-h-11 rounded-lg border border-slate-300 bg-white px-4 text-base font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600";
 
 export function BackupPanel({ tasks, onRestore }: Props) {
   const id = useId();
@@ -111,14 +111,14 @@ export function BackupPanel({ tasks, onRestore }: Props) {
     // details / summary: クリックで開閉できる HTML 標準の部品。ふだんは閉じておき、画面をすっきりさせる
     <details className="group rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
       <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 rounded-2xl px-4 text-base font-bold text-slate-900 focus-visible:outline-2 focus-visible:outline-indigo-600 sm:px-6 [&::-webkit-details-marker]:hidden">
-        <span aria-hidden="true" className="text-sm text-indigo-700 transition-transform group-open:rotate-90">
+        <span aria-hidden="true" className="text-base text-indigo-700 transition-transform group-open:rotate-90">
           ▶
         </span>
         バックアップと復元
       </summary>
 
       <div className="flex flex-col gap-4 px-4 pb-4 sm:px-6 sm:pb-6">
-        <p className="text-sm text-slate-700">
+        <p className="text-base text-slate-700">
           {"ブラウザのデータが消えたときに備えて、タスクをファイルに保存できます。" +
             "別のブラウザや端末にタスクを移すときにも使えます。"}
         </p>
@@ -127,9 +127,9 @@ export function BackupPanel({ tasks, onRestore }: Props) {
           <button
             type="button"
             onClick={exportBackup}
-            className="min-h-11 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            className="min-h-11 rounded-lg bg-indigo-600 px-4 text-base font-semibold text-white hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
           >
-            バックアップを保存（JSON）
+            バックアップファイルを保存
           </button>
 
           {/* 本物の file 入力欄は見えなくし、label をボタンのように見せる */}
@@ -149,14 +149,14 @@ export function BackupPanel({ tasks, onRestore }: Props) {
         </div>
 
         {reading && (
-          <p role="status" className="flex items-center gap-2 text-sm text-slate-600">
+          <p role="status" className="flex items-center gap-2 text-base text-slate-600">
             <SpinnerIcon />
             ファイルを確認しています…
           </p>
         )}
 
         {pending && (
-          <div role="alertdialog" aria-labelledby={`${id}-confirm-title`} className="flex flex-col gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+          <div role="alertdialog" aria-labelledby={`${id}-confirm-title`} className="flex flex-col gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-base text-amber-950">
             <p id={`${id}-confirm-title`} className="font-bold">
               このバックアップで置き換えますか？
             </p>
@@ -186,7 +186,7 @@ export function BackupPanel({ tasks, onRestore }: Props) {
               <button
                 type="button"
                 onClick={confirmRestore}
-                className="min-h-11 rounded-lg bg-amber-700 px-4 text-sm font-semibold text-white hover:bg-amber-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-700"
+                className="min-h-11 rounded-lg bg-amber-700 px-4 text-base font-semibold text-white hover:bg-amber-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-700"
               >
                 置き換えて復元する
               </button>
@@ -201,7 +201,7 @@ export function BackupPanel({ tasks, onRestore }: Props) {
               <button
                 type="button"
                 onClick={undoRestore}
-                className="mt-2 min-h-11 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                className="mt-2 min-h-11 rounded-lg border border-slate-300 bg-white px-4 text-base font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
               >
                 復元を取り消す（元の{undo.previous.length}件に戻す）
               </button>

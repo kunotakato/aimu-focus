@@ -15,8 +15,9 @@ import { useToday } from "@/hooks/useToday";
 import { DEFAULT_QUERY, filterTasks, isFiltering, type TaskQuery } from "@/lib/filter";
 import { computeStats } from "@/lib/stats";
 import type { LoadIssue } from "@/lib/storage";
+import type { TaskInput } from "@/lib/tasks";
 
-const BACKUP_NOTE = "読み込めなかった元のデータは、次に変更を保存するとき、ブラウザ内に別名で退避します。";
+const BACKUP_NOTE = "読み込めなかった元のデータは消さずに、次に保存するときブラウザ内の別の場所に残しておきます。";
 
 function loadIssueMessage(issue: LoadIssue): string {
   switch (issue.type) {
@@ -39,6 +40,29 @@ export function TaskBoard() {
   const { tasks, loadIssue, saveError, add, toggle, update, remove, replaceAll, dismissLoadIssue } = useTasks();
   const today = useToday();
   const [query, setQuery] = useState<TaskQuery>(DEFAULT_QUERY);
+  /** 最後に行った操作の結果。「押したのに何も起きない？」と不安にさせないために表示する */
+  const [lastAction, setLastAction] = useState<string | null>(null);
+
+  const titleOf = (id: string) => tasks.find((task) => task.id === id)?.title ?? "";
+
+  function handleAdd(input: TaskInput) {
+    add(input);
+    setLastAction(`「${input.title}」を追加しました`);
+  }
+  function handleToggle(id: string) {
+    const task = tasks.find((t) => t.id === id);
+    toggle(id);
+    setLastAction(task?.completed ? `「${task.title}」を未完了に戻しました` : `「${titleOf(id)}」を完了にしました`);
+  }
+  function handleUpdate(id: string, changes: TaskInput) {
+    update(id, changes);
+    setLastAction(`「${changes.title}」を保存しました`);
+  }
+  function handleDelete(id: string) {
+    const title = titleOf(id);
+    remove(id);
+    setLastAction(`「${title}」を削除しました`);
+  }
 
   // 表示するタスクは state にせず、毎回 tasks と query から計算する。
   // 同じ情報を2か所で持たないことで、「一覧と表示がずれる」バグを防ぐ。
@@ -67,20 +91,31 @@ export function TaskBoard() {
       <Dashboard stats={stats} />
 
       <section aria-label="タスクの追加" className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-6">
-        <TaskForm onAdd={add} />
+        <TaskForm onAdd={handleAdd} />
       </section>
 
       <section aria-labelledby="task-list-heading" className="flex flex-col gap-3">
         <div className="flex items-baseline justify-between">
-          <h2 id="task-list-heading" className="text-lg font-bold text-slate-900">
+          {/* tabIndex={-1}: 最後のタスクを削除したとき、ここへフォーカスを移せるようにする */}
+          <h2 id="task-list-heading" tabIndex={-1} className="text-lg font-bold text-slate-900 focus:outline-none">
             タスク
           </h2>
           {tasks.length > 0 && (
-            <p className="text-sm text-slate-600">
+            <p className="text-base text-slate-600">
               未完了 {stats.active} 件 / 全 {stats.total} 件
             </p>
           )}
         </div>
+
+        {/* role="status": 内容が変わると、読み上げソフトが邪魔にならないタイミングで読み上げる */}
+        <p role="status" className="min-h-6 text-base font-medium text-emerald-800">
+          {lastAction && (
+            <>
+              <span aria-hidden="true">✓ </span>
+              {lastAction}
+            </>
+          )}
+        </p>
 
         {tasks.length > 0 && (
           <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
@@ -90,7 +125,7 @@ export function TaskBoard() {
 
         {/* aria-live: 件数が変わったことを読み上げソフトに伝える */}
         {tasks.length > 0 && isFiltering(query) && (
-          <p aria-live="polite" className="text-sm text-slate-700">
+          <p aria-live="polite" className="text-base text-slate-700">
             条件に合うタスク：{visibleTasks.length} 件
           </p>
         )}
@@ -99,9 +134,9 @@ export function TaskBoard() {
           tasks={visibleTasks}
           totalCount={tasks.length}
           today={today}
-          onToggle={toggle}
-          onUpdate={update}
-          onDelete={remove}
+          onToggle={handleToggle}
+          onUpdate={handleUpdate}
+          onDelete={handleDelete}
           onResetQuery={() => setQuery({ ...DEFAULT_QUERY, sort: query.sort })}
         />
       </section>
@@ -110,7 +145,7 @@ export function TaskBoard() {
 
       {/* JSX では改行が空白になるため、日本語の文は1つの文字列にまとめる */}
       <Notice variant="info">
-        {"タスクは、このブラウザの中（localStorage）に自動で保存されます。" +
+        {"タスクは、このブラウザの中に自動で保存されます。" +
           "ほかのブラウザやスマホ・パソコンとは同期されません。" +
           "ブラウザの履歴やサイトデータを消去すると、タスクも消えるのでご注意ください。"}
       </Notice>

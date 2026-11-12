@@ -5,6 +5,7 @@
  * 新規追加フォームと編集フォームの両方で使い回す（同じ部品を2か所に書かない）。
  */
 import { useId } from "react";
+import { ErrorIcon } from "@/components/icons";
 import { PRIORITY_LABELS, DESCRIPTION_MAX_LENGTH } from "@/lib/tasks";
 import type { TaskFormErrors, TaskFormValues } from "@/lib/taskForm";
 import type { Priority } from "@/types/task";
@@ -19,13 +20,15 @@ type Props = {
 export const inputClass =
   "w-full rounded-lg border border-slate-300 bg-white px-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/30 aria-[invalid=true]:border-red-600";
 
-export const labelClass = "text-sm font-semibold text-slate-700";
+export const labelClass = "text-base font-semibold text-slate-700";
 
 export function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
   return (
-    <p id={id} className="text-sm font-medium text-red-700">
-      {message}
+    // 赤い色だけでなく × のアイコンでも「エラー」だと分かるようにする
+    <p id={id} className="flex items-start gap-1.5 text-base font-medium text-red-700">
+      <ErrorIcon className="mt-1 size-4" />
+      <span>{message}</span>
     </p>
   );
 }
@@ -71,7 +74,7 @@ export function TaskFields({ values, errors, onChange }: Props) {
             <button
               type="button"
               onClick={() => onChange("dueDate", "")}
-              className="min-h-12 shrink-0 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              className="min-h-12 shrink-0 rounded-lg border border-slate-300 bg-white px-3 text-base font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
             >
               期限なしにする
             </button>

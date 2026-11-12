@@ -37,10 +37,10 @@ describe("バックアップの作成", () => {
 
 describe("復元前のデータ検証（不正なデータは読み込まない）", () => {
   it.each([
-    ["JSON でない", "これはJSONではない", "JSON ファイルとして読み込めません"],
+    ["JSON でない", "これはJSONではない", "ファイルの中身を読み取れません"],
     ["別アプリのファイル", JSON.stringify({ app: "other", version: 1, tasks: [] }), "バックアップファイルではありません"],
     ["配列だけ", JSON.stringify([a]), "バックアップファイルではありません"],
-    ["形式番号が違う", backupJson({ version: 2 }), "形式番号"],
+    ["形式番号が違う", backupJson({ version: 2 }), "バージョン"],
     ["書き出し日時が不正", backupJson({ exportedAt: "昨日" }), "作成日時"],
     ["tasks が配列でない", backupJson({ tasks: {} }), "タスクの一覧"],
     ["不正なタスクを含む", backupJson({ tasks: [a, { ...b, priority: "urgent" }, { id: "x" }] }), "正しくないタスクが2件"],

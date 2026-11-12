@@ -62,7 +62,7 @@ export function TaskToolbar({ query, onChange }: Props) {
           {STATUS_OPTIONS.map((option) => (
             <label
               key={option.value}
-              className="flex min-h-11 cursor-pointer items-center justify-center rounded-md text-sm font-semibold text-slate-700 has-checked:bg-white has-checked:text-indigo-700 has-checked:shadow-sm has-focus-visible:outline-2 has-focus-visible:outline-indigo-600"
+              className="flex min-h-11 cursor-pointer items-center justify-center rounded-md text-base font-semibold text-slate-700 has-checked:bg-white has-checked:text-indigo-700 has-checked:shadow-sm has-focus-visible:outline-2 has-focus-visible:outline-indigo-600"
             >
               <input
                 type="radio"
@@ -85,7 +85,7 @@ export function TaskToolbar({ query, onChange }: Props) {
         onClick={() => setShowMore((open) => !open)}
         aria-expanded={showMore}
         aria-controls={showMore ? `${id}-more` : undefined}
-        className="-mx-2 flex min-h-11 items-center gap-2 self-start rounded-lg px-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 focus-visible:outline-2 focus-visible:outline-indigo-600"
+        className="-mx-2 flex min-h-11 items-center gap-2 self-start rounded-lg px-2 text-base font-semibold text-indigo-700 hover:bg-indigo-50 focus-visible:outline-2 focus-visible:outline-indigo-600"
       >
         <span aria-hidden="true" className={`inline-block transition-transform ${showMore ? "rotate-90" : ""}`}>
           ▶
