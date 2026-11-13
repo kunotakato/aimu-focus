@@ -25,7 +25,8 @@ import {
   addTask,
   createTask,
   deleteTask,
-  toggleTask,
+  setFocus,
+  toggleTaskWithResult,
   updateTask,
   type TaskInput,
 } from "@/lib/tasks";
@@ -92,7 +93,18 @@ export function useTasks() {
     loadIssue,
     saveError,
     add: (input: TaskInput) => commit(addTask(tasks, createTask(input))),
-    toggle: (id: string) => commit(toggleTask(tasks, id)),
+    /** 完了・未完了を切り替える。繰り返しタスクの次回分を作ったら、そのタスクを返す */
+    toggle: (id: string): Task | null => {
+      const result = toggleTaskWithResult(tasks, id);
+      commit(result.tasks);
+      return result.created;
+    },
+    /** 「今日やる」に選ぶ／外す。上限を超えて選べなかったら false を返す */
+    focus: (id: string, focused: boolean, today: string): boolean => {
+      const result = setFocus(tasks, id, focused, today);
+      if (result.ok) commit(result.tasks);
+      return result.ok;
+    },
     update: (id: string, changes: TaskInput) => commit(updateTask(tasks, id, changes)),
     remove: (id: string) => commit(deleteTask(tasks, id)),
     /** 一覧をまるごと置き換える（バックアップからの復元・復元の取り消しに使う） */

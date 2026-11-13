@@ -2,10 +2,11 @@
  * タスクの優先度・期限の表示。
  * 色だけに頼らず、「優先度 高」「期限切れ」のように言葉とアイコンでも伝える。
  */
-import { WarningIcon } from "@/components/icons";
+import { RepeatIcon, TagIcon, WarningIcon } from "@/components/icons";
 import { formatDueDate, getDueStatus } from "@/lib/date";
-import { PRIORITY_LABELS } from "@/lib/tasks";
-import type { Priority, Task } from "@/types/task";
+import { RECURRENCE_LABELS } from "@/lib/recurrence";
+import { CATEGORY_LABELS, PRIORITY_LABELS } from "@/lib/tasks";
+import type { Category, Priority, Recurrence, Task } from "@/types/task";
 
 const PRIORITY_STYLES: Record<Priority, string> = {
   high: "bg-red-100 text-red-800 ring-red-200",
@@ -58,6 +59,28 @@ export function DueDateLabel({ task, today }: { task: Task; today: string }) {
     <span className={`text-base ${emphasis ? "font-semibold text-amber-900" : "text-slate-600"}`}>
       期限 {date}
       {suffix}
+    </span>
+  );
+}
+
+/** カテゴリ（課題2-B）。種類は文字で区別する（色だけで区別しない） */
+export function CategoryBadge({ category }: { category: Category | null }) {
+  if (category === null) return null;
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-0.5 text-base font-semibold text-slate-700 ring-1 ring-inset ring-slate-300">
+      <TagIcon className="size-4" />
+      {CATEGORY_LABELS[category]}
+    </span>
+  );
+}
+
+/** 繰り返し（課題2-C） */
+export function RecurrenceBadge({ recurrence }: { recurrence: Recurrence }) {
+  if (recurrence === "none") return null;
+  return (
+    <span className="inline-flex items-center gap-1 text-base font-semibold text-indigo-800">
+      <RepeatIcon className="size-4" />
+      {RECURRENCE_LABELS[recurrence]}
     </span>
   );
 }

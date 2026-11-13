@@ -5,9 +5,10 @@
  * 「見る」「編集する」「削除を確認する」の3つの状態を切り替える。
  */
 import { useId, useRef, useState } from "react";
+import { StarIcon } from "@/components/icons";
 import { flushSync } from "react-dom";
 import { TaskEditForm } from "@/components/TaskEditForm";
-import { DueDateLabel, PriorityBadge } from "@/components/TaskMeta";
+import { CategoryBadge, DueDateLabel, PriorityBadge, RecurrenceBadge } from "@/components/TaskMeta";
 import { formatDateTime, isOverdue } from "@/lib/date";
 import type { TaskInput } from "@/lib/tasks";
 import type { Task } from "@/types/task";
@@ -17,6 +18,8 @@ type Props = {
   /** 今日の日付（"YYYY-MM-DD"）。期限切れの判定に使う */
   today: string;
   onToggle: (id: string) => void;
+  /** 「今日やる」に選ぶ（true）／外す（false） */
+  onFocus: (id: string, focused: boolean) => void;
   onUpdate: (id: string, changes: TaskInput) => void;
   onDelete: (id: string) => void;
 };
@@ -25,9 +28,9 @@ type Props = {
 type Mode = "view" | "edit" | "confirmDelete";
 
 const subtleButton =
-  "min-h-11 rounded-lg px-3 text-base font-semibold text-slate-600 focus-visible:outline-2 focus-visible:outline-offset-2";
+  "min-h-11 shrink-0 whitespace-nowrap rounded-lg px-3 text-base font-semibold text-slate-600 focus-visible:outline-2 focus-visible:outline-offset-2";
 
-export function TaskItem({ task, today, onToggle, onUpdate, onDelete }: Props) {
+export function TaskItem({ task, today, onToggle, onFocus, onUpdate, onDelete }: Props) {
   const [mode, setMode] = useState<Mode>("view");
   const checkboxId = useId();
   const editButtonRef = useRef<HTMLButtonElement>(null);
@@ -44,6 +47,7 @@ export function TaskItem({ task, today, onToggle, onUpdate, onDelete }: Props) {
     focusTarget.current?.focus();
   }
   const overdue = isOverdue(task, today);
+  const focused = task.focusDate === today;
 
   if (mode === "edit") {
     return (
@@ -91,6 +95,8 @@ export function TaskItem({ task, today, onToggle, onUpdate, onDelete }: Props) {
       <div className="mt-1 flex flex-col gap-1.5 pl-9">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <PriorityBadge priority={task.priority} />
+          <CategoryBadge category={task.category} />
+          <RecurrenceBadge recurrence={task.recurrence} />
           <DueDateLabel task={task} today={today} />
         </div>
         {task.description && (
@@ -102,8 +108,25 @@ export function TaskItem({ task, today, onToggle, onUpdate, onDelete }: Props) {
             作成 {formatDateTime(task.createdAt)}
             {task.updatedAt !== task.createdAt && <> ・ 更新 {formatDateTime(task.updatedAt)}</>}
           </p>
+          {/* ボタンの文字は折り返さない。入りきらなければボタンごと次の行へ回る */}
           {mode === "view" && (
-            <div className="-mr-2 ml-auto flex">
+            <div className="-mr-2 ml-auto flex shrink-0">
+              {/* 完了済みは「今日やる」に選ぶ意味がないので、選んでいないときはボタンを出さない */}
+              {(!task.completed || focused) && (
+                <button
+                  type="button"
+                  onClick={() => onFocus(task.id, !focused)}
+                  // aria-pressed: 押されている（選択中）かどうかを読み上げソフトに伝える
+                  aria-pressed={focused}
+                  aria-label={`「${task.title}」を今日やる`}
+                  className={`${subtleButton} inline-flex items-center gap-1 ${
+                    focused ? "text-amber-800 hover:bg-amber-50" : "hover:bg-amber-50 hover:text-amber-800"
+                  } focus-visible:outline-amber-700`}
+                >
+                  <StarIcon filled={focused} className="size-4" />
+                  {focused ? "今日やる中" : "今日やる"}
+                </button>
+              )}
               <button
                 ref={editButtonRef}
                 type="button"

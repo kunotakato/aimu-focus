@@ -3,6 +3,8 @@
  * 集計する数が少ないので、グラフではなく「数字そのもの」を大きく見せる。
  */
 import { WarningIcon } from "@/components/icons";
+import { WeeklyReview } from "@/components/WeeklyReview";
+import type { WeeklyReview as Review } from "@/lib/review";
 import type { TaskStats } from "@/lib/stats";
 
 function StatTile({ label, value, tone = "default" }: { label: string; value: number; tone?: "default" | "alert" }) {
@@ -22,7 +24,7 @@ function StatTile({ label, value, tone = "default" }: { label: string; value: nu
   );
 }
 
-export function Dashboard({ stats }: { stats: TaskStats }) {
+export function Dashboard({ stats, review }: { stats: TaskStats; review: Review }) {
   const { total, completed, active, completionRate, overdue } = stats;
 
   return (
@@ -69,6 +71,8 @@ export function Dashboard({ stats }: { stats: TaskStats }) {
         <StatTile label="未完了" value={active} />
         <StatTile label="期限切れ" value={overdue} tone="alert" />
       </dl>
+
+      <WeeklyReview review={review} />
     </section>
   );
 }

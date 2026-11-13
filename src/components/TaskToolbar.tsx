@@ -7,7 +7,9 @@
  */
 import { useId, useState } from "react";
 import { inputClass, labelClass } from "@/components/TaskFields";
-import type { PriorityFilter, SortOrder, StatusFilter, TaskQuery } from "@/lib/filter";
+import type { CategoryFilter, PriorityFilter, SortOrder, StatusFilter, TaskQuery } from "@/lib/filter";
+import { CATEGORY_LABELS } from "@/lib/tasks";
+import type { Category } from "@/types/task";
 
 type Props = {
   query: TaskQuery;
@@ -31,7 +33,8 @@ export function TaskToolbar({ query, onChange }: Props) {
   const id = useId();
   // 優先度・並び順はふだん隠しておき、必要なときだけ開く（項目が多すぎて見づらくならないように）
   const [showMore, setShowMore] = useState(false);
-  const extraCount = (query.priority !== "all" ? 1 : 0) + (query.sort !== "newest" ? 1 : 0);
+  const extraCount =
+    (query.category !== "all" ? 1 : 0) + (query.priority !== "all" ? 1 : 0) + (query.sort !== "newest" ? 1 : 0);
 
   // 1項目だけ変えた新しい条件を親に渡す
   function set<K extends keyof TaskQuery>(field: K, value: TaskQuery[K]) {
@@ -90,12 +93,31 @@ export function TaskToolbar({ query, onChange }: Props) {
         <span aria-hidden="true" className={`inline-block transition-transform ${showMore ? "rotate-90" : ""}`}>
           ▶
         </span>
-        優先度・並び順
+        カテゴリ・優先度・並び順
         {extraCount > 0 && <span className="font-normal text-slate-700">（{extraCount}件 変更中）</span>}
       </button>
 
       {showMore && (
         <div id={`${id}-more`} className="grid grid-cols-2 gap-3">
+          <div className="col-span-2 flex flex-col gap-1">
+            <label htmlFor={`${id}-category`} className={labelClass}>
+              カテゴリ
+            </label>
+            <select
+              id={`${id}-category`}
+              value={query.category}
+              onChange={(event) => set("category", event.target.value as CategoryFilter)}
+              className={`${inputClass} min-h-12`}
+            >
+              <option value="all">すべて</option>
+              {(Object.keys(CATEGORY_LABELS) as Category[]).map((c) => (
+                <option key={c} value={c}>
+                  {CATEGORY_LABELS[c]}
+                </option>
+              ))}
+              <option value="none">未設定</option>
+            </select>
+          </div>
           <div className="flex flex-col gap-1">
             <label htmlFor={`${id}-priority`} className={labelClass}>
               優先度

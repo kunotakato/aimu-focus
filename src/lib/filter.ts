@@ -2,16 +2,19 @@
  * 検索・絞り込み・並び替え。
  * 元の配列は変えずに、条件に合うタスクを並べ替えた「新しい配列」を返す。
  */
-import type { Priority, Task } from "@/types/task";
+import type { Category, Priority, Task } from "@/types/task";
 
 export type StatusFilter = "all" | "active" | "completed";
 export type PriorityFilter = "all" | Priority;
+/** "none" はカテゴリ未設定のタスク */
+export type CategoryFilter = "all" | Category | "none";
 export type SortOrder = "newest" | "oldest" | "dueDate" | "priority";
 
 export type TaskQuery = {
   keyword: string;
   status: StatusFilter;
   priority: PriorityFilter;
+  category: CategoryFilter;
   sort: SortOrder;
 };
 
@@ -19,12 +22,13 @@ export const DEFAULT_QUERY: TaskQuery = {
   keyword: "",
   status: "all",
   priority: "all",
+  category: "all",
   sort: "newest",
 };
 
 /** 条件が初期状態から変わっているか（「条件をリセット」ボタンの表示に使う） */
 export function isFiltering(query: TaskQuery): boolean {
-  return query.keyword.trim() !== "" || query.status !== "all" || query.priority !== "all";
+  return query.keyword.trim() !== "" || query.status !== "all" || query.priority !== "all" || query.category !== "all";
 }
 
 /**
@@ -80,6 +84,8 @@ export function filterTasks(tasks: Task[], query: TaskQuery): Task[] {
       if (query.status === "active" && task.completed) return false;
       if (query.status === "completed" && !task.completed) return false;
       if (query.priority !== "all" && task.priority !== query.priority) return false;
+      if (query.category === "none" && task.category !== null) return false;
+      if (query.category !== "all" && query.category !== "none" && task.category !== query.category) return false;
       return matchesKeyword(task, query.keyword);
     })
     .sort(compare(query.sort)); // filter が新しい配列を作るので、sort しても元の配列は変わらない

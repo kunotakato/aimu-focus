@@ -114,7 +114,7 @@ export function TaskForm({ onAdd }: Props) {
         <span aria-hidden="true" className={`inline-block transition-transform ${showDetails ? "rotate-90" : ""}`}>
           ▶
         </span>
-        優先度・期限・説明を設定
+        詳細を設定（優先度・期限・カテゴリなど）
       </button>
 
       {showDetails && (

@@ -39,14 +39,14 @@ function visibleTitles(): string[] {
 describe("タスクの詳細管理", () => {
   it("優先度・期限・説明を付けて追加できる", async () => {
     const { user } = setup();
-    await user.click(screen.getByRole("button", { name: "優先度・期限・説明を設定" }));
+    await user.click(screen.getByRole("button", { name: "詳細を設定（優先度・期限・カテゴリなど）" }));
     await user.type(screen.getByLabelText("新しいタスク"), "提案書を出す");
     await user.selectOptions(screen.getByLabelText("優先度"), "高");
     await user.type(screen.getByLabelText(/期限日/), "2030-01-15");
     await user.type(screen.getByLabelText(/説明/), "B社向け");
     await user.click(screen.getByRole("button", { name: "追加" }));
 
-    const item = screen.getByRole("listitem");
+    const item = within(screen.getByRole("list", { name: "タスク一覧" })).getByRole("listitem");
     expect(within(item).getByText("優先度 高")).toBeInTheDocument();
     expect(within(item).getByText(/2030年1月15日/)).toBeInTheDocument();
     expect(within(item).getByText("B社向け")).toBeInTheDocument();
@@ -153,7 +153,7 @@ describe("検索・絞り込み・並び替え", () => {
     seed(sample);
     const { user } = setup();
     const toolbar = screen.getByRole("search");
-    await user.click(screen.getByRole("button", { name: "優先度・並び順" }));
+    await user.click(screen.getByRole("button", { name: "カテゴリ・優先度・並び順" }));
     await user.selectOptions(within(toolbar).getByLabelText("優先度"), "高");
     expect(visibleTitles()).toEqual(["AWS資格の勉強"]);
   });
@@ -163,9 +163,9 @@ describe("検索・絞り込み・並び替え", () => {
     const { user } = setup();
     expect(visibleTitles()).toEqual(["部屋の掃除", "週報を書く", "AWS資格の勉強"]); // 初期は新しい順
 
-    // 並び順は「優先度・並び順」を開くと選べる
+    // 並び順は「カテゴリ・優先度・並び順」を開くと選べる
     expect(screen.queryByLabelText("並び順")).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "優先度・並び順" }));
+    await user.click(screen.getByRole("button", { name: "カテゴリ・優先度・並び順" }));
 
     await user.selectOptions(screen.getByLabelText("並び順"), "期限が近い順");
     expect(visibleTitles()).toEqual(["部屋の掃除", "AWS資格の勉強", "週報を書く"]);

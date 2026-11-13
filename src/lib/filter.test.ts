@@ -82,3 +82,21 @@ describe("isFiltering", () => {
     expect(isFiltering(query({ status: "completed" }))).toBe(true);
   });
 });
+
+describe("カテゴリでの絞り込み（課題2-B）", () => {
+  const withCategory: Task[] = [
+    task("w", "2026-11-01T00:00:00Z", { category: "work" }),
+    task("s", "2026-11-02T00:00:00Z", { category: "study" }),
+    task("n", "2026-11-03T00:00:00Z", { category: null }),
+  ];
+
+  it("指定したカテゴリだけ、または未設定だけを表示する", () => {
+    expect(ids(filterTasks(withCategory, query({ category: "study" })))).toEqual(["s"]);
+    expect(ids(filterTasks(withCategory, query({ category: "none" })))).toEqual(["n"]);
+    expect(filterTasks(withCategory, query({ category: "all" }))).toHaveLength(3);
+  });
+
+  it("カテゴリの絞り込みも「絞り込み中」に含める", () => {
+    expect(isFiltering(query({ category: "work" }))).toBe(true);
+  });
+});

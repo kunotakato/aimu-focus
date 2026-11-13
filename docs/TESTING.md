@@ -27,6 +27,16 @@ npm run build       # 本番用ビルド
 | 完了率の計算 | `lib/stats.test.ts`, `components/DashboardBackup.test.tsx` | 0件は表示しない（null）、切り捨てで 100% を誤表示しない |
 | JSON バックアップ・復元 | `lib/backup.test.ts`, `components/DashboardBackup.test.tsx` | 書き出し→復元で内容が一致、不正ファイル8種類を拒否、確認・事前保存・取り消し |
 
+### 課題2の追加機能
+
+| 機能 | テストファイル | 主な確認内容 |
+|---|---|---|
+| データ形式2とマイグレーション | `lib/storage.test.ts`, `lib/backup.test.ts`, `lib/validation.test.ts`, `components/NewFeatures.test.tsx` | 形式1の保存データ・バックアップを形式2に変換して読み込める、新しい項目の不正値を拒否 |
+| A. 今日のフォーカス | `lib/tasks.test.ts`, `components/NewFeatures.test.tsx` | 3件までの上限と理由の表示、完了した分は上限に数えない、日付が変わると外れる |
+| B. カテゴリ分け | `lib/filter.test.ts`, `components/NewFeatures.test.tsx` | カテゴリを付けて追加・編集、カテゴリ・未設定での絞り込み |
+| C. 繰り返しタスク | `lib/recurrence.test.ts`, `lib/tasks.test.ts`, `components/NewFeatures.test.tsx` | 次回期限の計算（月末・うるう年・遅れて完了・早めに完了）、内容の引き継ぎ、付け直しても重複しない |
+| F. 週の振り返り | `lib/review.test.ts`, `components/NewFeatures.test.tsx` | 月曜はじまりの週、今週・先週の件数、曜日ごとの件数、連続日数、取り消すと減る |
+
 上の表に加えて、キーボード操作（フォーカスの移動）と操作結果の表示を `components/Accessibility.test.tsx` で確認しています。
 
 ## 自動テスト以外の確認（手動・ブラウザ）
@@ -40,6 +50,8 @@ npm run build       # 本番用ビルド
 | Hydration Error | 開発モード・本番モードでコンソールを確認 | 0 件 |
 | 実際の操作 | 追加・完了・編集・削除・再読み込み・ファイル保存・復元 | 期待どおり |
 | 公開URLでの動作（2026-11-12） | https://aimu-focus.vercel.app を Playwright で iPhone 13 相当と PC 幅で操作。空白タスクの拒否、追加・完了・編集・削除・検索、再読み込みとタブの開き直し後の復元、バックアップの保存と復元、壊れた保存データでの注意表示、axe 検査 | すべて期待どおり。コンソールのエラー 0 件、アクセシビリティ違反 0 件 |
+
+| 課題2の追加機能（2026-11-13、ローカルの本番ビルド） | iPhone SE（幅 320px）と PC 幅で、今日のフォーカス・上限エラー・繰り返しの次回分・振り返りの件数と連続日数を操作。文字サイズ・axe 検査も実施 | すべて期待どおり。16px 未満の文字 0 件、アクセシビリティ違反 0 件、コンソールのエラー 0 件 |
 
 ## まだ確認できていないこと
 

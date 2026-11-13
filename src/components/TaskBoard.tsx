@@ -6,6 +6,8 @@
 import { useState } from "react";
 import { BackupPanel } from "@/components/BackupPanel";
 import { Dashboard } from "@/components/Dashboard";
+import { FocusPanel } from "@/components/FocusPanel";
+import { ErrorIcon } from "@/components/icons";
 import { Notice } from "@/components/Notice";
 import { TaskForm } from "@/components/TaskForm";
 import { TaskList } from "@/components/TaskList";
@@ -13,9 +15,11 @@ import { TaskToolbar } from "@/components/TaskToolbar";
 import { useTasks, type SaveError } from "@/hooks/useTasks";
 import { useToday } from "@/hooks/useToday";
 import { DEFAULT_QUERY, filterTasks, isFiltering, type TaskQuery } from "@/lib/filter";
+import { formatDueDate } from "@/lib/date";
+import { computeWeeklyReview } from "@/lib/review";
 import { computeStats } from "@/lib/stats";
 import type { LoadIssue } from "@/lib/storage";
-import type { TaskInput } from "@/lib/tasks";
+import { FOCUS_LIMIT, type TaskInput } from "@/lib/tasks";
 
 const BACKUP_NOTE = "読み込めなかった元のデータは消さずに、次に保存するときブラウザ内の別の場所に残しておきます。";
 
@@ -37,37 +41,57 @@ const SAVE_ERROR_MESSAGES: Record<SaveError, string> = {
 };
 
 export function TaskBoard() {
-  const { tasks, loadIssue, saveError, add, toggle, update, remove, replaceAll, dismissLoadIssue } = useTasks();
+  const { tasks, loadIssue, saveError, add, toggle, focus, update, remove, replaceAll, dismissLoadIssue } = useTasks();
   const today = useToday();
   const [query, setQuery] = useState<TaskQuery>(DEFAULT_QUERY);
   /** 最後に行った操作の結果。「押したのに何も起きない？」と不安にさせないために表示する */
-  const [lastAction, setLastAction] = useState<string | null>(null);
+  const [lastAction, setLastAction] = useState<{ text: string; tone: "success" | "error" } | null>(null);
+  const done = (text: string) => setLastAction({ text, tone: "success" });
 
   const titleOf = (id: string) => tasks.find((task) => task.id === id)?.title ?? "";
 
   function handleAdd(input: TaskInput) {
     add(input);
-    setLastAction(`「${input.title}」を追加しました`);
+    done(`「${input.title}」を追加しました`);
   }
   function handleToggle(id: string) {
     const task = tasks.find((t) => t.id === id);
-    toggle(id);
-    setLastAction(task?.completed ? `「${task.title}」を未完了に戻しました` : `「${titleOf(id)}」を完了にしました`);
+    const created = toggle(id);
+    if (task?.completed) {
+      done(`「${task.title}」を未完了に戻しました`);
+    } else if (created) {
+      const due = created.dueDate ? `（期限 ${formatDueDate(created.dueDate)}）` : "";
+      done(`「${titleOf(id)}」を完了にしました。次回分${due}を作成しました`);
+    } else {
+      done(`「${titleOf(id)}」を完了にしました`);
+    }
+  }
+  function handleFocus(id: string, focused: boolean) {
+    const ok = focus(id, focused, today);
+    if (!ok) {
+      setLastAction({
+        text: `「今日やる」に選べるのは${FOCUS_LIMIT}つまでです。どれかを完了にするか、外してから選んでください`,
+        tone: "error",
+      });
+    } else {
+      done(focused ? `「${titleOf(id)}」を今日やるに選びました` : `「${titleOf(id)}」を今日やるから外しました`);
+    }
   }
   function handleUpdate(id: string, changes: TaskInput) {
     update(id, changes);
-    setLastAction(`「${changes.title}」を保存しました`);
+    done(`「${changes.title}」を保存しました`);
   }
   function handleDelete(id: string) {
     const title = titleOf(id);
     remove(id);
-    setLastAction(`「${title}」を削除しました`);
+    done(`「${title}」を削除しました`);
   }
 
   // 表示するタスクは state にせず、毎回 tasks と query から計算する。
   // 同じ情報を2か所で持たないことで、「一覧と表示がずれる」バグを防ぐ。
   const visibleTasks = filterTasks(tasks, query);
   const stats = computeStats(tasks, today);
+  const focusTasks = tasks.filter((task) => task.focusDate === today);
 
   // localStorage が使えないことは loadIssue で伝えているので、同じ内容の保存エラーは重ねて出さない
   const showSaveError = saveError && !(saveError === "unavailable" && loadIssue?.type === "unavailable");
@@ -88,7 +112,17 @@ export function TaskBoard() {
         </Notice>
       )}
 
-      <Dashboard stats={stats} />
+      {/* タスクが1件もないうちは出さない（最初の画面をすっきりさせる） */}
+      {tasks.length > 0 && (
+        <FocusPanel
+          tasks={focusTasks}
+          today={today}
+          onToggle={handleToggle}
+          onUnfocus={(id) => handleFocus(id, false)}
+        />
+      )}
+
+      <Dashboard stats={stats} review={computeWeeklyReview(tasks, today)} />
 
       <section aria-label="タスクの追加" className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-6">
         <TaskForm onAdd={handleAdd} />
@@ -108,13 +142,15 @@ export function TaskBoard() {
         </div>
 
         {/* role="status": 内容が変わると、読み上げソフトが邪魔にならないタイミングで読み上げる */}
-        <p role="status" className="min-h-6 text-base font-medium text-emerald-800">
-          {lastAction && (
-            <>
-              <span aria-hidden="true">✓ </span>
-              {lastAction}
-            </>
-          )}
+        <p
+          role="status"
+          className={`flex min-h-6 items-start gap-1.5 text-base font-medium ${
+            lastAction?.tone === "error" ? "text-red-700" : "text-emerald-800"
+          }`}
+        >
+          {lastAction?.tone === "error" && <ErrorIcon className="mt-1 size-4" />}
+          {lastAction?.tone === "success" && <span aria-hidden="true">✓</span>}
+          {lastAction && <span>{lastAction.text}</span>}
         </p>
 
         {tasks.length > 0 && (
@@ -135,6 +171,7 @@ export function TaskBoard() {
           totalCount={tasks.length}
           today={today}
           onToggle={handleToggle}
+          onFocus={handleFocus}
           onUpdate={handleUpdate}
           onDelete={handleDelete}
           onResetQuery={() => setQuery({ ...DEFAULT_QUERY, sort: query.sort })}

@@ -17,6 +17,7 @@ type Props = {
   totalCount: number;
   today: string;
   onToggle: (id: string) => void;
+  onFocus: (id: string, focused: boolean) => void;
   onUpdate: (id: string, changes: TaskInput) => void;
   onDelete: (id: string) => void;
   onResetQuery: () => void;
@@ -31,7 +32,7 @@ function EmptyState({ title, children }: { title: string; children: React.ReactN
   );
 }
 
-export function TaskList({ tasks, totalCount, today, onToggle, onUpdate, onDelete, onResetQuery }: Props) {
+export function TaskList({ tasks, totalCount, today, onToggle, onFocus, onUpdate, onDelete, onResetQuery }: Props) {
   const listRef = useRef<HTMLUListElement>(null);
 
   /**
@@ -80,6 +81,7 @@ export function TaskList({ tasks, totalCount, today, onToggle, onUpdate, onDelet
           task={task}
           today={today}
           onToggle={onToggle}
+          onFocus={onFocus}
           onUpdate={onUpdate}
           onDelete={handleDelete}
         />

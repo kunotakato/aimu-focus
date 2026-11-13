@@ -6,9 +6,10 @@
  */
 import { useId } from "react";
 import { ErrorIcon } from "@/components/icons";
-import { PRIORITY_LABELS, DESCRIPTION_MAX_LENGTH } from "@/lib/tasks";
+import { RECURRENCE_LABELS } from "@/lib/recurrence";
+import { CATEGORY_LABELS, PRIORITY_LABELS, DESCRIPTION_MAX_LENGTH } from "@/lib/tasks";
 import type { TaskFormErrors, TaskFormValues } from "@/lib/taskForm";
-import type { Priority } from "@/types/task";
+import type { Category, Priority, Recurrence } from "@/types/task";
 
 type Props = {
   values: TaskFormValues;
@@ -57,6 +58,25 @@ export function TaskFields({ values, errors, onChange }: Props) {
       </div>
 
       <div className="flex flex-col gap-1">
+        <label htmlFor={`${id}-category`} className={labelClass}>
+          カテゴリ
+        </label>
+        <select
+          id={`${id}-category`}
+          value={values.category}
+          onChange={(event) => onChange("category", event.target.value as Category | "")}
+          className={`${inputClass} min-h-12`}
+        >
+          <option value="">設定しない</option>
+          {(Object.keys(CATEGORY_LABELS) as Category[]).map((c) => (
+            <option key={c} value={c}>
+              {CATEGORY_LABELS[c]}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex flex-col gap-1">
         <label htmlFor={`${id}-due`} className={labelClass}>
           期限日<span className="font-normal text-slate-600">（任意）</span>
         </label>
@@ -81,6 +101,30 @@ export function TaskFields({ values, errors, onChange }: Props) {
           )}
         </div>
         <FieldError id={`${id}-due-error`} message={errors.dueDate} />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label htmlFor={`${id}-recurrence`} className={labelClass}>
+          繰り返し
+        </label>
+        <select
+          id={`${id}-recurrence`}
+          value={values.recurrence}
+          onChange={(event) => onChange("recurrence", event.target.value as Recurrence)}
+          aria-describedby={values.recurrence !== "none" ? `${id}-recurrence-hint` : undefined}
+          className={`${inputClass} min-h-12`}
+        >
+          {(Object.keys(RECURRENCE_LABELS) as Recurrence[]).map((r) => (
+            <option key={r} value={r}>
+              {RECURRENCE_LABELS[r]}
+            </option>
+          ))}
+        </select>
+        {values.recurrence !== "none" && (
+          <p id={`${id}-recurrence-hint`} className="text-base text-slate-600">
+            完了にすると、次回のタスクが自動で作られます。
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col gap-1 sm:col-span-2">
