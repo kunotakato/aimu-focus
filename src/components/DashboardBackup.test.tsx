@@ -42,7 +42,7 @@ function jsonFile(text: string, name = "backup.json") {
 
 const current = [createTask("今のタスクA", { id: "c1" }), createTask("今のタスクB", { id: "c2" })];
 const fromBackup = [
-  { ...createTask("復元タスク1", { id: "r1" }), completed: true },
+  { ...createTask("復元タスク1", { id: "r1" }), completed: true, completedAt: "2026-11-01T00:00:00.000Z" },
   createTask("復元タスク2", { id: "r2" }),
   createTask("復元タスク3", { id: "r3" }),
 ];
@@ -90,7 +90,7 @@ describe("バックアップ（書き出し）", () => {
     expect(downloadTextFile).toHaveBeenCalledTimes(1);
     const [fileName, text] = vi.mocked(downloadTextFile).mock.calls[0];
     expect(fileName).toMatch(/^aimu-focus-backup-\d{8}-\d{4}\.json$/);
-    expect(JSON.parse(text)).toMatchObject({ app: "aimu-focus", version: 1, tasks: current });
+    expect(JSON.parse(text)).toMatchObject({ app: "aimu-focus", version: 2, tasks: current });
     expect(screen.getByText(/保存を開始しました/)).toBeInTheDocument();
   });
 });

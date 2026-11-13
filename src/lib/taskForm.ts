@@ -7,7 +7,7 @@
  */
 import { DESCRIPTION_MAX_LENGTH, validateTitle, type TaskInput } from "@/lib/tasks";
 import { isValidDateString } from "@/lib/validation";
-import type { Priority, Task } from "@/types/task";
+import type { Category, Priority, Recurrence, Task } from "@/types/task";
 
 export type TaskFormValues = {
   title: string;
@@ -15,6 +15,9 @@ export type TaskFormValues = {
   priority: Priority;
   /** 期限日。未設定なら "" */
   dueDate: string;
+  /** カテゴリ。未設定なら "" */
+  category: Category | "";
+  recurrence: Recurrence;
 };
 
 export type TaskFormErrors = Partial<Record<"title" | "description" | "dueDate", string>>;
@@ -24,6 +27,8 @@ export const EMPTY_FORM_VALUES: TaskFormValues = {
   description: "",
   priority: "medium",
   dueDate: "",
+  category: "",
+  recurrence: "none",
 };
 
 /** 既存のタスクを、編集フォームの初期値に変換する */
@@ -33,6 +38,8 @@ export function toFormValues(task: Task): TaskFormValues {
     description: task.description,
     priority: task.priority,
     dueDate: task.dueDate ?? "",
+    category: task.category ?? "",
+    recurrence: task.recurrence,
   };
 }
 
@@ -62,6 +69,8 @@ export function validateTaskForm(
       description,
       priority: values.priority,
       dueDate: values.dueDate === "" ? null : values.dueDate,
+      category: values.category === "" ? null : values.category,
+      recurrence: values.recurrence,
     },
   };
 }

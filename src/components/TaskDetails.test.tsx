@@ -126,7 +126,7 @@ describe("検索・絞り込み・並び替え", () => {
   });
   const sample = [
     base("a", 1, { title: "AWS資格の勉強", priority: "high", dueDate: "2030-03-01" }),
-    base("b", 2, { title: "週報を書く", description: "Slackに投稿", completed: true }),
+    base("b", 2, { title: "週報を書く", description: "Slackに投稿", completed: true, completedAt: "2026-11-02T00:00:00.000Z" }),
     base("c", 3, { title: "部屋の掃除", priority: "low", dueDate: "2030-02-01" }),
   ] satisfies Task[];
 

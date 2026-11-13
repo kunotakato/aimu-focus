@@ -15,10 +15,13 @@ export const STORAGE_KEY = "aimu-focus:tasks";
 export const BACKUP_KEY_PREFIX = "aimu-focus:tasks:backup:";
 
 /**
- * 保存データの形式番号。
- * 将来データの形を変えたとき「古い形式かどうか」を見分けるために入れておく。
+ * 保存データの形式番号。データの形を変えたとき「古い形式かどうか」を見分けるために入れている。
+ *   1: 課題1（基本の項目）
+ *   2: 課題2（カテゴリ・繰り返し・今日やる・完了日時を追加）
+ * 形式1のデータは、読み込むときに形式2へ変換する（保存すると形式2で書き込まれる）。
  */
-export const STORAGE_VERSION = 1;
+export const STORAGE_VERSION = 2;
+const READABLE_VERSIONS = [1, 2];
 
 type StoredData = { version: typeof STORAGE_VERSION; tasks: Task[] };
 
@@ -74,13 +77,14 @@ export function loadTasks(): LoadResult {
   if (
     typeof parsed !== "object" ||
     parsed === null ||
-    (parsed as { version?: unknown }).version !== STORAGE_VERSION ||
+    !READABLE_VERSIONS.includes((parsed as { version?: unknown }).version as number) ||
     !Array.isArray((parsed as { tasks?: unknown }).tasks)
   ) {
     return { tasks: [], issue: { type: "corrupted", raw } };
   }
 
-  const { tasks, skipped } = pickValidTasks((parsed as { tasks: unknown[] }).tasks);
+  const { version, tasks: items } = parsed as { version: number; tasks: unknown[] };
+  const { tasks, skipped } = pickValidTasks(items, version);
   if (skipped > 0) {
     return { tasks, issue: { type: "partial", skipped, raw } };
   }

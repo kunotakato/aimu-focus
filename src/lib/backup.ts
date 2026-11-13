@@ -7,11 +7,12 @@
  * 復元するファイルは「外から来た、信用できないデータ」として扱い、
  * 1件でもおかしなタスクが含まれていたら、ファイル全体を読み込まない（中途半端に復元しない）。
  */
-import { isTask } from "@/lib/validation";
+import { isTask, migrateTaskFromV1 } from "@/lib/validation";
 import type { Task } from "@/types/task";
 
 export const BACKUP_APP_ID = "aimu-focus";
-export const BACKUP_VERSION = 1;
+/** 2: 課題2の形式。課題1で書き出した形式1のファイルも、読み込むときに形式2へ変換して使える */
+export const BACKUP_VERSION = 2;
 /** 読み込めるファイルの最大サイズ（5MB）。巨大なファイルでブラウザが固まるのを防ぐ */
 export const BACKUP_MAX_BYTES = 5 * 1024 * 1024;
 
@@ -58,7 +59,7 @@ export function parseBackup(text: string): ParseBackupResult {
 
   const { version, exportedAt, tasks } = data as Record<string, unknown>;
 
-  if (version !== BACKUP_VERSION) {
+  if (version !== 1 && version !== BACKUP_VERSION) {
     return { ok: false, error: "このアプリでは読み込めないバージョンのバックアップです。" };
   }
   if (typeof exportedAt !== "string" || Number.isNaN(Date.parse(exportedAt))) {
@@ -68,7 +69,8 @@ export function parseBackup(text: string): ParseBackupResult {
     return { ok: false, error: "バックアップにタスクの一覧が含まれていません。" };
   }
 
-  const invalidCount = tasks.filter((task) => !isTask(task)).length;
+  const migrated = version === 1 ? tasks.map(migrateTaskFromV1) : tasks;
+  const invalidCount = migrated.filter((task) => !isTask(task)).length;
   if (invalidCount > 0) {
     return {
       ok: false,
@@ -76,13 +78,13 @@ export function parseBackup(text: string): ParseBackupResult {
     };
   }
 
-  const ids = new Set((tasks as Task[]).map((task) => task.id));
-  if (ids.size !== tasks.length) {
+  const ids = new Set((migrated as Task[]).map((task) => task.id));
+  if (ids.size !== migrated.length) {
     return { ok: false, error: "同じタスクが重複して含まれているため、読み込みを中止しました（データは変更していません）。" };
   }
 
   return {
     ok: true,
-    backup: { app: BACKUP_APP_ID, version: BACKUP_VERSION, exportedAt, tasks: tasks as Task[] },
+    backup: { app: BACKUP_APP_ID, version: BACKUP_VERSION, exportedAt, tasks: migrated as Task[] },
   };
 }

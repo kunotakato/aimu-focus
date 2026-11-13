@@ -10,7 +10,7 @@ import { createTask } from "@/lib/tasks";
 
 const NOW = new Date("2026-11-12T00:00:00Z");
 const taskA = createTask("A", { id: "a", now: NOW });
-const taskB = { ...createTask("B", { id: "b", now: NOW }), completed: true };
+const taskB = { ...createTask("B", { id: "b", now: NOW }), completed: true, completedAt: NOW.toISOString() };
 
 describe("saveTasks / loadTasks", () => {
   it("初めて開いたとき（データなし）は空の一覧で、問題なし", () => {
@@ -25,7 +25,7 @@ describe("saveTasks / loadTasks", () => {
   it("形式番号（version）付きの JSON で保存する", () => {
     saveTasks([taskA]);
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
-    expect(stored).toEqual({ version: 1, tasks: [taskA] });
+    expect(stored).toEqual({ version: 2, tasks: [taskA] });
   });
 });
 
@@ -86,5 +86,43 @@ describe("backupRawData（元データの退避）", () => {
       throw new DOMException("full", "QuotaExceededError");
     });
     expect(backupRawData("x")).toBeNull();
+  });
+});
+
+describe("形式1（課題1）のデータの読み込み（マイグレーション）", () => {
+  // 課題1のときに保存されていた形（課題2で増えた項目がない）
+  const v1Active = {
+    id: "old1",
+    title: "課題1で作ったタスク",
+    description: "",
+    completed: false,
+    priority: "high",
+    dueDate: "2026-11-20",
+    createdAt: "2026-11-10T00:00:00.000Z",
+    updatedAt: "2026-11-10T00:00:00.000Z",
+  };
+  const v1Done = { ...v1Active, id: "old2", completed: true, updatedAt: "2026-11-11T09:00:00.000Z" };
+
+  it("増えた項目に初期値を入れて読み込み、元の項目はそのまま残す", () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, tasks: [v1Active, v1Done] }));
+    const { tasks, issue } = loadTasks();
+
+    expect(issue).toBeNull();
+    expect(tasks[0]).toEqual({
+      ...v1Active,
+      category: null,
+      recurrence: "none",
+      seriesId: "old1",
+      focusDate: null,
+      completedAt: null,
+    });
+    // 完了済みは、最終更新日時を完了日時とみなす
+    expect(tasks[1].completedAt).toBe("2026-11-11T09:00:00.000Z");
+  });
+
+  it("次に保存すると形式2で書き込まれる", () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, tasks: [v1Active] }));
+    saveTasks(loadTasks().tasks);
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).version).toBe(2);
   });
 });
