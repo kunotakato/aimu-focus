@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // 天気アプリは独立したプロジェクトなので、Todo アプリの lint 対象から外す
+    "weather-app/**",
   ]),
 ]);
 
