@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getRain, getWeather } from "@/lib/client";
 import type { WeatherQuery } from "@/lib/openweather";
 import type { RainPoint, WeatherResponse } from "@/lib/types";
+import { AdviceCard } from "./AdviceCard";
 import { CurrentWeatherCard } from "./CurrentWeatherCard";
 import { DayDetail } from "./DayDetail";
 import { ForecastCalendar } from "./ForecastCalendar";
@@ -96,6 +97,10 @@ export function WeatherApp() {
         <>
           <CurrentWeatherCard data={data} />
           {rain && <RainNowcast points={rain} />}
+          <AdviceCard
+            day={selectedDay}
+            current={selectedDay.date === data.today ? data.current : undefined}
+          />
           <div className="grid gap-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
             <ForecastCalendar
               // 場所が変わったらカレンダーの表示月をリセットする

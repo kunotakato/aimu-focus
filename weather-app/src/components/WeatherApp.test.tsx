@@ -55,10 +55,23 @@ describe("WeatherApp", () => {
     await user.click(day14);
 
     expect(day14).toHaveAttribute("aria-pressed", "true");
-    const detail = screen.getByRole("region", { name: /11月14日（土）/ });
+    const detail = screen.getByRole("region", { name: /11月14日（土）.*の予報/ });
     expect(within(detail).getAllByText("適度な雨").length).toBeGreaterThan(0);
     // 降水確率（最大）の欄が 80%
     expect(within(detail).getByText("降水確率（最大）").nextElementSibling).toHaveTextContent("80%");
+  });
+
+  it("服装・傘アドバイスを表示し、選んだ日に合わせて切り替える", async () => {
+    await stubApi();
+    const user = userEvent.setup();
+    render(<WeatherApp />);
+
+    const today = await screen.findByRole("region", { name: "👕 今日の服装・傘アドバイス" });
+    expect(within(today).getByText("傘はいらなそうです（降水確率 最大20%）。")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /11月14日（土）/ }));
+    const tomorrow = screen.getByRole("region", { name: "👕 11月14日（土）の服装・傘アドバイス" });
+    expect(within(tomorrow).getByText(/傘を持っていきましょう/)).toBeInTheDocument();
   });
 
   it("予報のない日は選べない", async () => {
