@@ -8,22 +8,23 @@ const b = { ...createTask("B", { id: "b", now: NOW }), completed: true, complete
 
 /** 正しいバックアップの中身を、一部だけ書き換えた JSON 文字列を作る */
 function backupJson(overrides: Record<string, unknown> = {}): string {
-  return JSON.stringify({ ...createBackup([a, b], NOW), ...overrides });
+  return JSON.stringify({ ...createBackup([a, b], [], NOW), ...overrides });
 }
 
 describe("バックアップの作成", () => {
   it("アプリ名・形式番号・書き出し日時・タスクを含む", () => {
-    expect(createBackup([a], NOW)).toEqual({
+    expect(createBackup([a], [], NOW)).toEqual({
       app: "aimu-focus",
-      version: 2,
+      version: 3,
       exportedAt: "2026-11-12T00:30:00.000Z",
       tasks: [a],
+      templates: [],
     });
   });
 
   it("書き出した内容は、そのまま復元できる（往復しても変わらない）", () => {
-    const result = parseBackup(serializeBackup(createBackup([a, b], NOW)));
-    expect(result).toEqual({ ok: true, backup: createBackup([a, b], NOW) });
+    const result = parseBackup(serializeBackup(createBackup([a, b], [], NOW)));
+    expect(result).toEqual({ ok: true, backup: createBackup([a, b], [], NOW) });
   });
 
   it("ファイル名に日時が入る", () => {
@@ -31,7 +32,7 @@ describe("バックアップの作成", () => {
   });
 
   it("0件でも書き出し・復元できる", () => {
-    expect(parseBackup(serializeBackup(createBackup([], NOW)))).toMatchObject({ ok: true, backup: { tasks: [] } });
+    expect(parseBackup(serializeBackup(createBackup([], [], NOW)))).toMatchObject({ ok: true, backup: { tasks: [] } });
   });
 });
 
@@ -69,7 +70,8 @@ describe("形式1（課題1）のバックアップファイル", () => {
 
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.backup.version).toBe(2);
+      expect(result.backup.version).toBe(3);
+      expect(result.backup.templates).toBeNull(); // 古い形式にはテンプレートが入っていない
       expect(result.backup.tasks[0]).toMatchObject({
         ...v1Task,
         category: null,
@@ -78,5 +80,38 @@ describe("形式1（課題1）のバックアップファイル", () => {
         completedAt: "2026-11-11T00:00:00.000Z",
       });
     }
+  });
+});
+
+describe("形式3：テンプレート入りのバックアップ（課題2-L）", () => {
+  const template = {
+    id: "tpl",
+    title: "週報を書く",
+    description: "",
+    priority: "medium" as const,
+    category: "work" as const,
+    recurrence: "weekly" as const,
+    createdAt: NOW.toISOString(),
+  };
+
+  it("テンプレートも書き出し、そのまま復元できる", () => {
+    const result = parseBackup(serializeBackup(createBackup([a], [template], NOW)));
+    expect(result.ok && result.backup.templates).toEqual([template]);
+  });
+
+  it("形式2（テンプレートなし）のファイルは templates が null（今のテンプレートに触らない）", () => {
+    const v2 = JSON.stringify({ app: "aimu-focus", version: 2, exportedAt: NOW.toISOString(), tasks: [a] });
+    const result = parseBackup(v2);
+    expect(result.ok && result.backup.templates).toBeNull();
+  });
+
+  it.each([
+    ["テンプレートの一覧がない", { templates: undefined }],
+    ["不正なテンプレートを含む", { templates: [{ ...template, priority: "urgent" }] }],
+    ["上限を超えている", { templates: Array.from({ length: 11 }, (_, i) => ({ ...template, id: `t${i}` })) }],
+  ])("%s → 読み込まない", (_label, overrides) => {
+    const result = parseBackup(backupJson(overrides));
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toContain("テンプレート");
   });
 });

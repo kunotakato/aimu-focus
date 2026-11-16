@@ -6,7 +6,8 @@
  * （最初から項目が多いと、ごちゃごちゃして使いにくいため）。
  *
  * props（親から受け取る値）:
- *   onAdd … 入力チェックを通ったタスクの内容を親に渡すための関数
+ *   onAdd … 入力チェックを通ったタスクの内容を親に渡すための関数。
+ *           saveAsTemplate が true なら、テンプレートとしても保存してほしいという意味
  */
 import { useId, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { ErrorIcon } from "@/components/icons";
@@ -15,7 +16,7 @@ import { EMPTY_FORM_VALUES, validateTaskForm, type TaskFormErrors, type TaskForm
 import { TITLE_MAX_LENGTH, type TaskInput } from "@/lib/tasks";
 
 type Props = {
-  onAdd: (input: TaskInput) => void;
+  onAdd: (input: TaskInput, options: { saveAsTemplate: boolean }) => void;
 };
 
 /**
@@ -33,6 +34,8 @@ export function TaskForm({ onAdd }: Props) {
   const [values, setValues] = useState<TaskFormValues>(EMPTY_FORM_VALUES);
   const [errors, setErrors] = useState<TaskFormErrors>({});
   const [showDetails, setShowDetails] = useState(false);
+  /** 「この内容をテンプレートにも保存する」にチェックが入っているか */
+  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // useId: ラベルと入力欄を結びつける ID を自動で作る（同じ部品を複数置いても重複しない）
@@ -60,8 +63,10 @@ export function TaskForm({ onAdd }: Props) {
       return;
     }
 
-    onAdd(result.value);
+    // 詳細欄を閉じているときは、チェックを見落としていることがあるので保存しない
+    onAdd(result.value, { saveAsTemplate: showDetails && saveAsTemplate });
     setValues(EMPTY_FORM_VALUES);
+    setSaveAsTemplate(false);
     setErrors({});
     // ボタンをクリックした場合でも、続けて入力できるよう入力欄にカーソルを戻す
     inputRef.current?.focus();
@@ -109,7 +114,7 @@ export function TaskForm({ onAdd }: Props) {
         onClick={() => setShowDetails((open) => !open)}
         aria-expanded={showDetails}
         aria-controls={showDetails ? `${id}-details` : undefined}
-        className="-mx-2 flex min-h-11 items-center gap-2 self-start rounded-lg px-2 text-base font-semibold text-indigo-700 hover:bg-indigo-50 focus-visible:outline-2 focus-visible:outline-indigo-600"
+        className="-mx-2 flex min-h-11 items-baseline gap-2 self-start rounded-lg px-2 py-2.5 text-left text-base font-semibold text-indigo-700 hover:bg-indigo-50 focus-visible:outline-2 focus-visible:outline-indigo-600"
       >
         <span aria-hidden="true" className={`inline-block transition-transform ${showDetails ? "rotate-90" : ""}`}>
           ▶
@@ -120,6 +125,16 @@ export function TaskForm({ onAdd }: Props) {
       {showDetails && (
         <div id={`${id}-details`}>
           <TaskFields values={values} errors={errors} onChange={handleChange} />
+          {/* label で囲み、文字を押してもチェックが切り替わるようにする（押せる範囲を広げる） */}
+          <label className="mt-4 flex min-h-11 cursor-pointer items-center gap-3 text-base text-slate-800">
+            <input
+              type="checkbox"
+              checked={saveAsTemplate}
+              onChange={(event) => setSaveAsTemplate(event.target.checked)}
+              className="size-6 shrink-0 cursor-pointer accent-indigo-600"
+            />
+            この内容をテンプレートにも保存する（期限日は保存しません）
+          </label>
         </div>
       )}
       {/* 詳細欄を閉じていてもエラーが分かるように */}

@@ -41,7 +41,7 @@ export type SaveResult =
   | { ok: false; reason: "quota" | "unavailable" | "backup-failed" };
 
 /** localStorage を取り出す。使えない環境では null を返す */
-function getStorage(): Storage | null {
+export function getStorage(): Storage | null {
   try {
     // サーバー（Node.js）には window がないので、まずそこを確認する
     if (typeof window === "undefined") return null;
@@ -92,7 +92,7 @@ export function loadTasks(): LoadResult {
 }
 
 /** QuotaExceededError（容量オーバー）かどうか。ブラウザによって名前が違う */
-function isQuotaError(error: unknown): boolean {
+export function isQuotaError(error: unknown): boolean {
   return (
     error instanceof DOMException &&
     (error.name === "QuotaExceededError" || error.name === "NS_ERROR_DOM_QUOTA_REACHED")

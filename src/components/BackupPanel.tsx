@@ -23,10 +23,13 @@ import {
 import { formatDateTime } from "@/lib/date";
 import { downloadTextFile } from "@/lib/download";
 import type { Task } from "@/types/task";
+import type { Template } from "@/types/template";
 
 type Props = {
   tasks: Task[];
-  onRestore: (tasks: Task[]) => void;
+  templates: Template[];
+  /** templates が null のときは、テンプレートは変えない（古い形式のバックアップから復元した場合） */
+  onRestore: (tasks: Task[], templates: Template[] | null) => void;
 };
 
 type Message = { variant: "info" | "error"; text: string };
@@ -34,7 +37,7 @@ type Message = { variant: "info" | "error"; text: string };
 const secondaryButton =
   "min-h-11 rounded-lg border border-slate-300 bg-white px-4 text-base font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600";
 
-export function BackupPanel({ tasks, onRestore }: Props) {
+export function BackupPanel({ tasks, templates, onRestore }: Props) {
   const id = useId();
   const [message, setMessage] = useState<Message | null>(null);
   const [reading, setReading] = useState(false);
@@ -45,16 +48,18 @@ export function BackupPanel({ tasks, onRestore }: Props) {
    * 復元のあとにタスクを追加・編集すると tasks は別の配列になるので、そのときは元に戻せないようにする
    * （元に戻すと、復元後の変更まで消えてしまうため）。
    */
-  const [undo, setUndo] = useState<{ previous: Task[]; restored: Task[] } | null>(null);
+  const [undo, setUndo] = useState<{ previous: Task[]; previousTemplates: Template[]; restored: Task[] } | null>(
+    null,
+  );
   const canUndo = undo !== null && undo.restored === tasks;
 
   function exportBackup() {
     const fileName = backupFileName();
     setUndo(null); // 書き出したあとは「元に戻す」の案内を出さない
-    downloadTextFile(fileName, serializeBackup(createBackup(tasks)));
+    downloadTextFile(fileName, serializeBackup(createBackup(tasks, templates)));
     setMessage({
       variant: "info",
-      text: `バックアップ「${fileName}」（${tasks.length}件）の保存を開始しました。ダウンロードフォルダを確認してください。`,
+      text: `バックアップ「${fileName}」（タスク${tasks.length}件・テンプレート${templates.length}件）の保存を開始しました。ダウンロードフォルダを確認してください。`,
     });
   }
 
@@ -92,15 +97,15 @@ export function BackupPanel({ tasks, onRestore }: Props) {
 
   function confirmRestore() {
     if (!pending) return;
-    setUndo({ previous: tasks, restored: pending.backup.tasks });
-    onRestore(pending.backup.tasks);
+    setUndo({ previous: tasks, previousTemplates: templates, restored: pending.backup.tasks });
+    onRestore(pending.backup.tasks, pending.backup.templates);
     setMessage({ variant: "info", text: `${pending.backup.tasks.length}件のタスクを復元しました。` });
     setPending(null);
   }
 
   function undoRestore() {
     if (!canUndo) return;
-    onRestore(undo.previous);
+    onRestore(undo.previous, undo.previousTemplates);
     setMessage({ variant: "info", text: `復元を取り消し、元の${undo.previous.length}件に戻しました。` });
     setUndo(null);
   }
@@ -166,6 +171,11 @@ export function BackupPanel({ tasks, onRestore }: Props) {
               <li>
                 中身：{pending.backup.tasks.length}件（未完了 {pending.backup.tasks.length - pendingCompleted}件・完了{" "}
                 {pendingCompleted}件）
+              </li>
+              <li>
+                {pending.backup.templates === null
+                  ? "テンプレート：このファイルには入っていません（今のテンプレートはそのまま残ります）"
+                  : `テンプレート：${pending.backup.templates.length}件（今のテンプレートと置き換わります）`}
               </li>
             </ul>
             {tasks.length > 0 && (

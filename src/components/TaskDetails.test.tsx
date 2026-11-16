@@ -42,7 +42,7 @@ describe("タスクの詳細管理", () => {
     await user.click(screen.getByRole("button", { name: "詳細を設定（優先度・期限・カテゴリなど）" }));
     await user.type(screen.getByLabelText("新しいタスク"), "提案書を出す");
     await user.selectOptions(screen.getByLabelText("優先度"), "高");
-    await user.type(screen.getByLabelText(/期限日/), "2030-01-15");
+    await user.type(screen.getByLabelText(/^期限日/), "2030-01-15");
     await user.type(screen.getByLabelText(/説明/), "B社向け");
     await user.click(screen.getByRole("button", { name: "追加" }));
 

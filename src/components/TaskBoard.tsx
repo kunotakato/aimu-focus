@@ -14,8 +14,10 @@ import { ReportPanel } from "@/components/ReportPanel";
 import { TaskForm } from "@/components/TaskForm";
 import { TaskList } from "@/components/TaskList";
 import { TaskToolbar } from "@/components/TaskToolbar";
+import { TemplateBar } from "@/components/TemplateBar";
 import { UndoToast } from "@/components/UndoToast";
 import { useTasks, type SaveError } from "@/hooks/useTasks";
+import { useTemplates } from "@/hooks/useTemplates";
 import { useToday } from "@/hooks/useToday";
 import { DEFAULT_QUERY, filterTasks, isFiltering, type TaskQuery } from "@/lib/filter";
 import { formatDueDate } from "@/lib/date";
@@ -23,7 +25,9 @@ import { computeWeeklyReview } from "@/lib/review";
 import { computeStats } from "@/lib/stats";
 import type { LoadIssue } from "@/lib/storage";
 import { FOCUS_LIMIT, type TaskInput } from "@/lib/tasks";
+import { TEMPLATE_LIMIT, inputFromTemplate } from "@/lib/templates";
 import type { Task } from "@/types/task";
+import type { Template } from "@/types/template";
 
 const BACKUP_NOTE = "読み込めなかった元のデータは消さずに、次に保存するときブラウザ内の別の場所に残しておきます。";
 
@@ -48,6 +52,7 @@ export function TaskBoard() {
   const { tasks, loadIssue, saveError, add, toggle, focus, update, remove, restore, replaceAll, dismissLoadIssue } =
     useTasks();
   const today = useToday();
+  const templateStore = useTemplates();
   const [query, setQuery] = useState<TaskQuery>(DEFAULT_QUERY);
   /** 最後に行った操作の結果。「押したのに何も起きない？」と不安にさせないために表示する */
   const [lastAction, setLastAction] = useState<{ text: string; tone: "success" | "error" } | null>(null);
@@ -67,9 +72,35 @@ export function TaskBoard() {
 
   const titleOf = (id: string) => tasks.find((task) => task.id === id)?.title ?? "";
 
-  function handleAdd(input: TaskInput) {
+  function handleAdd(input: TaskInput, { saveAsTemplate }: { saveAsTemplate: boolean }) {
     add(input);
-    done(`「${input.title}」を追加しました`);
+    if (!saveAsTemplate) {
+      done(`「${input.title}」を追加しました`);
+      return;
+    }
+    const result = templateStore.save(input);
+    if (result === "limit") {
+      setUndo(null);
+      setLastAction({
+        text: `「${input.title}」を追加しました。テンプレートは${TEMPLATE_LIMIT}個までのため保存できませんでした（「管理」から不要なものを削除してください）`,
+        tone: "error",
+      });
+    } else {
+      done(
+        result === "created"
+          ? `「${input.title}」を追加し、テンプレートにも保存しました`
+          : `「${input.title}」を追加し、同じ名前のテンプレートを今の内容に更新しました`,
+      );
+    }
+  }
+  function handleUseTemplate(template: Template) {
+    add(inputFromTemplate(template));
+    done(`テンプレートから「${template.title}」を追加しました`);
+  }
+  function handleDeleteTemplate(id: string) {
+    const title = templateStore.templates.find((t) => t.id === id)?.title ?? "";
+    templateStore.remove(id);
+    done(`テンプレート「${title}」を削除しました`);
   }
   function handleToggle(id: string) {
     const task = tasks.find((t) => t.id === id);
@@ -156,6 +187,14 @@ export function TaskBoard() {
         </Notice>
       )}
 
+      {templateStore.saveError && (
+        <Notice variant="error">
+          {templateStore.saveError === "quota"
+            ? "テンプレートを保存できませんでした。ブラウザの保存容量がいっぱいです。"
+            : "テンプレートを保存できませんでした。ブラウザの設定で保存が許可されていない可能性があります。"}
+        </Notice>
+      )}
+
       {showSaveError && (
         <Notice variant="error">
           {SAVE_ERROR_MESSAGES[saveError]}
@@ -180,6 +219,7 @@ export function TaskBoard() {
 
       <section aria-label="タスクの追加" className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-6">
         <TaskForm onAdd={handleAdd} />
+        <TemplateBar templates={templateStore.templates} onUse={handleUseTemplate} onDelete={handleDeleteTemplate} />
       </section>
 
       <section aria-labelledby="task-list-heading" className="flex flex-col gap-3">
@@ -234,8 +274,11 @@ export function TaskBoard() {
 
       <BackupPanel
         tasks={tasks}
-        onRestore={(next) => {
-          replaceAll(next);
+        templates={templateStore.templates}
+        onRestore={(nextTasks, nextTemplates) => {
+          replaceAll(nextTasks);
+          // 古い形式のバックアップ（テンプレートなし）のときは、今のテンプレートをそのまま残す
+          if (nextTemplates !== null) templateStore.replaceAll(nextTemplates);
           setUndo(null);
         }}
       />

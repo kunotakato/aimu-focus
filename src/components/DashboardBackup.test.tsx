@@ -46,7 +46,7 @@ const fromBackup = [
   createTask("復元タスク2", { id: "r2" }),
   createTask("復元タスク3", { id: "r3" }),
 ];
-const validBackupText = serializeBackup(createBackup(fromBackup, new Date("2026-11-01T00:00:00Z")));
+const validBackupText = serializeBackup(createBackup(fromBackup, [], new Date("2026-11-01T00:00:00Z")));
 
 describe("進捗ダッシュボード", () => {
   it("タスク0件では完了率を「0%」と出さず、理由を表示する", () => {
@@ -90,7 +90,7 @@ describe("バックアップ（書き出し）", () => {
     expect(downloadTextFile).toHaveBeenCalledTimes(1);
     const [fileName, text] = vi.mocked(downloadTextFile).mock.calls[0];
     expect(fileName).toMatch(/^aimu-focus-backup-\d{8}-\d{4}\.json$/);
-    expect(JSON.parse(text)).toMatchObject({ app: "aimu-focus", version: 2, tasks: current });
+    expect(JSON.parse(text)).toMatchObject({ app: "aimu-focus", version: 3, tasks: current });
     expect(screen.getByText(/保存を開始しました/)).toBeInTheDocument();
   });
 });
@@ -141,7 +141,7 @@ describe("復元（読み込み）", () => {
     seed(current);
     const { user } = setup();
     await openBackupPanel(user);
-    const broken = JSON.stringify({ ...createBackup(fromBackup), tasks: [{ id: "x", title: "" }] });
+    const broken = JSON.stringify({ ...createBackup(fromBackup, []), tasks: [{ id: "x", title: "" }] });
     await user.upload(screen.getByLabelText("ファイルから復元"), jsonFile(broken));
 
     expect(await screen.findByText(/正しくないタスクが1件含まれているため/)).toBeInTheDocument();
