@@ -114,8 +114,10 @@ describe("タスクの詳細管理", () => {
       { ...createTask("2日後のタスク", { id: "t2" }), dueDate: dayFromToday(2) },
     ]);
     setup();
-    expect(screen.getByText(/（今日まで）/)).toBeInTheDocument();
-    expect(screen.getByText(/（あと2日）/)).toBeInTheDocument();
+    // 日報の下書きにも期限が書かれるので、タスク一覧の中に絞って確かめる
+    const list = within(screen.getByRole("list", { name: "タスク一覧" }));
+    expect(list.getByText(/（今日まで）/)).toBeInTheDocument();
+    expect(list.getByText(/（あと2日）/)).toBeInTheDocument();
   });
 });
 

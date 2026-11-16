@@ -10,6 +10,7 @@ import { Dashboard } from "@/components/Dashboard";
 import { FocusPanel } from "@/components/FocusPanel";
 import { ErrorIcon } from "@/components/icons";
 import { Notice } from "@/components/Notice";
+import { ReportPanel } from "@/components/ReportPanel";
 import { TaskForm } from "@/components/TaskForm";
 import { TaskList } from "@/components/TaskList";
 import { TaskToolbar } from "@/components/TaskToolbar";
@@ -174,6 +175,8 @@ export function TaskBoard() {
       )}
 
       <Dashboard stats={stats} review={computeWeeklyReview(tasks, today)} />
+
+      {tasks.length > 0 && <ReportPanel tasks={tasks} today={today} />}
 
       <section aria-label="タスクの追加" className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-6">
         <TaskForm onAdd={handleAdd} />
