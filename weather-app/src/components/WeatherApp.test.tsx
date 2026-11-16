@@ -12,7 +12,7 @@ async function stubApi(options: { rain?: boolean; weatherError?: string } = {}) 
     const url = String(input);
     if (url.startsWith("/api/weather")) {
       return options.weatherError
-        ? jsonResponse({ error: options.weatherError }, 404)
+        ? jsonResponse({ error: options.weatherError, code: "NOT_FOUND" }, 404)
         : jsonResponse(weather);
     }
     if (url.startsWith("/api/rain")) {
@@ -106,13 +106,17 @@ describe("WeatherApp", () => {
     await user.type(screen.getByLabelText("都市名"), "Kyoto");
     await user.click(screen.getByRole("button", { name: "検索" }));
 
-    expect(fetchMock).toHaveBeenCalledWith("/api/weather?city=Kyoto");
+    expect(fetchMock).toHaveBeenCalledWith("/api/weather?city=Kyoto", expect.anything());
   });
 
-  it("エラーをメッセージで知らせる", async () => {
+  it("都市が見つからないときは、原因と次にやることを案内する（再試行ボタンは出さない）", async () => {
     await stubApi({ weatherError: "「zzz」が見つかりませんでした。" });
     render(<WeatherApp />);
-    expect(await screen.findByRole("alert")).toHaveTextContent("「zzz」が見つかりませんでした。");
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("都市が見つかりませんでした");
+    expect(alert).toHaveTextContent("「zzz」が見つかりませんでした。");
+    expect(alert).toHaveTextContent("英語表記（例: Kyoto、Sapporo）");
+    expect(within(alert).queryByRole("button", { name: /再試行/ })).not.toBeInTheDocument();
   });
 
   it("Yahoo! の設定があれば、この先1時間の雨を表示する", async () => {
@@ -120,5 +124,54 @@ describe("WeatherApp", () => {
     render(<WeatherApp />);
     expect(await screen.findByText("☔ 1時間以内に雨が降る予報です")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Web Services by Yahoo! JAPAN" })).toBeInTheDocument();
+  });
+});
+
+describe("エラー対応（機能3）", () => {
+  it("データが届くまでは「読み込み中」を表示する", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => {}))); // 返事が来ないまま
+    render(<WeatherApp />);
+    expect(await screen.findByRole("status", { name: "天気を読み込み中" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "検索" })).toBeDisabled();
+  });
+
+  it("通信に失敗したら案内と再試行ボタンを出し、再試行で表示できる", async () => {
+    const weather = await fetchWeather({ city: "Tokyo" }, "k", fakeOwmFetch());
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockImplementation(async (input: RequestInfo | URL) =>
+        String(input).startsWith("/api/rain") ? jsonResponse({ enabled: false }) : jsonResponse(weather),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+    render(<WeatherApp />);
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("インターネットに接続できません");
+    await user.click(within(alert).getByRole("button", { name: /再試行/ }));
+
+    expect(await screen.findByRole("region", { name: /東京都.*現在の天気/ })).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("成功したデータは保存され、次に開いて取得に失敗しても前回のデータと時刻を表示する", async () => {
+    // 1回目: 成功 → 保存される
+    await stubApi();
+    const first = render(<WeatherApp />);
+    await screen.findByRole("region", { name: /東京都.*現在の天気/ });
+    first.unmount();
+
+    // 2回目: サーバーが不調
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => jsonResponse({ error: "天気サービスがエラーを返しました（500）。", code: "UPSTREAM" }, 502)),
+    );
+    render(<WeatherApp />);
+
+    // 保存しておいたデータがすぐに表示される
+    expect(screen.getByRole("region", { name: /東京都.*現在の天気/ })).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent("天気サービスが一時的に使えません");
+    expect(screen.getByText(/前回取得したデータ（.+ 時点）を表示しています/)).toBeInTheDocument();
   });
 });
