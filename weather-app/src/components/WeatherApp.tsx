@@ -8,6 +8,7 @@ import { AdviceCard } from "./AdviceCard";
 import { CurrentWeatherCard } from "./CurrentWeatherCard";
 import { DayDetail } from "./DayDetail";
 import { ForecastCalendar } from "./ForecastCalendar";
+import { Next24hChart } from "./Next24hChart";
 import { RainNowcast } from "./RainNowcast";
 import { SearchBar } from "./SearchBar";
 
@@ -101,7 +102,8 @@ export function WeatherApp() {
             day={selectedDay}
             current={selectedDay.date === data.today ? data.current : undefined}
           />
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
+          <Next24hChart daily={data.daily} />
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
             <ForecastCalendar
               // 場所が変わったらカレンダーの表示月をリセットする
               key={`${data.place.lat},${data.place.lon}`}

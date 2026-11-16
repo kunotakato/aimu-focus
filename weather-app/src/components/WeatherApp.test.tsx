@@ -74,6 +74,22 @@ describe("WeatherApp", () => {
     expect(within(tomorrow).getByText(/傘を持っていきましょう/)).toBeInTheDocument();
   });
 
+  it("これから24時間の気温・降水確率グラフと、その表を表示する", async () => {
+    await stubApi();
+    const user = userEvent.setup();
+    render(<WeatherApp />);
+
+    const chart = await screen.findByRole("region", { name: "📈 これから24時間の予報" });
+    const rows = within(within(chart).getByRole("table")).getAllByRole("row");
+    expect(rows).toHaveLength(1 + 5); // 見出し + 予報 5 件（テスト用データ）
+    expect(within(chart).getByRole("rowheader", { name: "14日 12:00" })).toBeInTheDocument();
+
+    // ← → キーで時刻を選ぶと、値が読み上げ用テキストに出る
+    within(chart).getByRole("group", { name: /気温と降水確率のグラフ/ }).focus();
+    await user.keyboard("{ArrowRight}");
+    expect(within(chart).getByText("13日 09:00、晴天、気温15度、降水確率10%")).toBeInTheDocument();
+  });
+
   it("予報のない日は選べない", async () => {
     await stubApi();
     render(<WeatherApp />);
