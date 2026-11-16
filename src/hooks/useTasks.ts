@@ -25,6 +25,7 @@ import {
   addTask,
   createTask,
   deleteTask,
+  restoreTask,
   setFocus,
   toggleTaskWithResult,
   updateTask,
@@ -107,6 +108,8 @@ export function useTasks() {
     },
     update: (id: string, changes: TaskInput) => commit(updateTask(tasks, id, changes)),
     remove: (id: string) => commit(deleteTask(tasks, id)),
+    /** 削除したタスクを元の位置に戻す（削除の取り消し） */
+    restore: (task: Task, index: number) => commit(restoreTask(tasks, task, index)),
     /** 一覧をまるごと置き換える（バックアップからの復元・復元の取り消しに使う） */
     replaceAll: (next: Task[]) => commit(next),
     dismissLoadIssue: () => setLoadIssue(null),

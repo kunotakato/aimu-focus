@@ -6,6 +6,7 @@ import {
   countFocused,
   createTask,
   deleteTask,
+  restoreTask,
   setFocus,
   toggleTask,
   toggleTaskWithResult,
@@ -197,5 +198,24 @@ describe("setFocus（今日やる）", () => {
   it("昨日選んだものは、今日の「今日やる」には数えない（日付が変わると自動で外れる）", () => {
     const tasks = make(3).map((t) => ({ ...t, focusDate: "2026-11-12" }));
     expect(countFocused(tasks, TODAY)).toBe(0);
+  });
+});
+
+describe("restoreTask（削除の取り消し）", () => {
+  const [a, b, c] = ["a", "b", "c"].map((id) => createTask(id.toUpperCase(), { id, now: NOW }));
+
+  it("削除したタスクを元の位置に戻す", () => {
+    const deleted = deleteTask([a, b, c], "b");
+    expect(restoreTask(deleted, b, 1).map((t) => t.id)).toEqual(["a", "b", "c"]);
+  });
+
+  it("位置が範囲外なら、端に戻す", () => {
+    expect(restoreTask([a], b, 5).map((t) => t.id)).toEqual(["a", "b"]);
+    expect(restoreTask([a], b, -1).map((t) => t.id)).toEqual(["b", "a"]);
+  });
+
+  it("同じ ID がすでにあれば、二重に戻さない", () => {
+    const list = [a, b];
+    expect(restoreTask(list, b, 0)).toBe(list);
   });
 });

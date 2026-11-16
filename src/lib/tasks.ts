@@ -178,6 +178,17 @@ export function updateTask(
   });
 }
 
+/**
+ * 削除したタスクを、元の位置（index）に戻した配列を返す（G. 削除の取り消し）。
+ * 削除のあとに一覧の件数が変わっていても配列からはみ出さないよう、位置は範囲内に収める。
+ * 同じ ID のタスクがすでにあれば（二重に戻そうとした場合）、何もしない。
+ */
+export function restoreTask(tasks: Task[], task: Task, index: number): Task[] {
+  if (tasks.some((t) => t.id === task.id)) return tasks;
+  const position = Math.min(Math.max(index, 0), tasks.length);
+  return [...tasks.slice(0, position), task, ...tasks.slice(position)];
+}
+
 /** 指定した ID のタスクを取り除いた配列を返す */
 export function deleteTask(tasks: Task[], id: string): Task[] {
   return tasks.filter((task) => task.id !== id);

@@ -3,7 +3,8 @@
 /**
  * タスクの入力・一覧・保存状態のメッセージをまとめた画面（ブラウザでだけ表示される）。
  */
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 import { BackupPanel } from "@/components/BackupPanel";
 import { Dashboard } from "@/components/Dashboard";
 import { FocusPanel } from "@/components/FocusPanel";
@@ -12,6 +13,7 @@ import { Notice } from "@/components/Notice";
 import { TaskForm } from "@/components/TaskForm";
 import { TaskList } from "@/components/TaskList";
 import { TaskToolbar } from "@/components/TaskToolbar";
+import { UndoToast } from "@/components/UndoToast";
 import { useTasks, type SaveError } from "@/hooks/useTasks";
 import { useToday } from "@/hooks/useToday";
 import { DEFAULT_QUERY, filterTasks, isFiltering, type TaskQuery } from "@/lib/filter";
@@ -20,6 +22,7 @@ import { computeWeeklyReview } from "@/lib/review";
 import { computeStats } from "@/lib/stats";
 import type { LoadIssue } from "@/lib/storage";
 import { FOCUS_LIMIT, type TaskInput } from "@/lib/tasks";
+import type { Task } from "@/types/task";
 
 const BACKUP_NOTE = "読み込めなかった元のデータは消さずに、次に保存するときブラウザ内の別の場所に残しておきます。";
 
@@ -41,12 +44,25 @@ const SAVE_ERROR_MESSAGES: Record<SaveError, string> = {
 };
 
 export function TaskBoard() {
-  const { tasks, loadIssue, saveError, add, toggle, focus, update, remove, replaceAll, dismissLoadIssue } = useTasks();
+  const { tasks, loadIssue, saveError, add, toggle, focus, update, remove, restore, replaceAll, dismissLoadIssue } =
+    useTasks();
   const today = useToday();
   const [query, setQuery] = useState<TaskQuery>(DEFAULT_QUERY);
   /** 最後に行った操作の結果。「押したのに何も起きない？」と不安にさせないために表示する */
   const [lastAction, setLastAction] = useState<{ text: string; tone: "success" | "error" } | null>(null);
-  const done = (text: string) => setLastAction({ text, tone: "success" });
+  /**
+   * 削除の取り消し（G）用に、削除したタスクと元の位置を覚えておく。
+   * null のときは「元に戻す」の通知を出さない。
+   */
+  const [undo, setUndo] = useState<{ task: Task; index: number } | null>(null);
+  // useCallback: 同じ関数を使い回す。毎回新しい関数を渡すと、通知の8秒タイマーが描画のたびにやり直しになるため
+  const closeUndo = useCallback(() => setUndo(null), []);
+
+  /** 操作の結果を表示する。削除以外の操作をしたら「元に戻す」は消す（戻すと、その操作まで消えてしまうため） */
+  const done = (text: string) => {
+    setLastAction({ text, tone: "success" });
+    setUndo(null);
+  };
 
   const titleOf = (id: string) => tasks.find((task) => task.id === id)?.title ?? "";
 
@@ -69,6 +85,7 @@ export function TaskBoard() {
   function handleFocus(id: string, focused: boolean) {
     const ok = focus(id, focused, today);
     if (!ok) {
+      setUndo(null);
       setLastAction({
         text: `「今日やる」に選べるのは${FOCUS_LIMIT}つまでです。どれかを完了にするか、外してから選んでください`,
         tone: "error",
@@ -82,10 +99,44 @@ export function TaskBoard() {
     done(`「${changes.title}」を保存しました`);
   }
   function handleDelete(id: string) {
-    const title = titleOf(id);
+    const index = tasks.findIndex((task) => task.id === id);
+    if (index === -1) return;
     remove(id);
-    done(`「${title}」を削除しました`);
+    // 結果は画面下の「元に戻す」通知で伝えるので、上の操作結果の表示は消しておく（同じ内容を二重に出さない）
+    setLastAction(null);
+    setUndo({ task: tasks[index], index });
   }
+
+  function handleUndo() {
+    if (!undo) return;
+    const { task, index } = undo;
+    // flushSync: 戻したタスクを画面に出してから、そのチェックボックスにフォーカスを移すため
+    flushSync(() => {
+      restore(task, index);
+      done(`「${task.title}」を元に戻しました`);
+    });
+    const checkbox = document.querySelector<HTMLElement>(
+      `[data-task-id="${CSS.escape(task.id)}"] input[type="checkbox"]`,
+    );
+    // 絞り込みで一覧に出ていない場合は、「タスク」見出しへフォーカスを移す
+    (checkbox ?? document.getElementById("task-list-heading"))?.focus();
+  }
+
+  // キーボードの Ctrl + Z（Mac は ⌘ + Z）でも元に戻せるようにする。
+  // ただし文字の入力中は、その入力欄の「元に戻す」を優先するため何もしない。
+  useEffect(() => {
+    if (!undo) return;
+    function handleKeyDown(event: KeyboardEvent) {
+      const target = event.target as HTMLElement;
+      const typing = target.closest("input, textarea, select, [contenteditable]") !== null;
+      if (!typing && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z" && !event.shiftKey) {
+        event.preventDefault();
+        handleUndo();
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  });
 
   // 表示するタスクは state にせず、毎回 tasks と query から計算する。
   // 同じ情報を2か所で持たないことで、「一覧と表示がずれる」バグを防ぐ。
@@ -178,7 +229,13 @@ export function TaskBoard() {
         />
       </section>
 
-      <BackupPanel tasks={tasks} onRestore={replaceAll} />
+      <BackupPanel
+        tasks={tasks}
+        onRestore={(next) => {
+          replaceAll(next);
+          setUndo(null);
+        }}
+      />
 
       {/* JSX では改行が空白になるため、日本語の文は1つの文字列にまとめる */}
       <Notice variant="info">
@@ -186,6 +243,9 @@ export function TaskBoard() {
           "ほかのブラウザやスマホ・パソコンとは同期されません。" +
           "ブラウザの履歴やサイトデータを消去すると、タスクも消えるのでご注意ください。"}
       </Notice>
+
+      {/* key に ID を渡すと、別のタスクを削除したときに通知が作り直され、8秒を数え直す */}
+      {undo && <UndoToast key={undo.task.id} title={undo.task.title} onUndo={handleUndo} onExpire={closeUndo} />}
     </div>
   );
 }
